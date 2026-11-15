@@ -126,4 +126,4 @@ Issues and pull requests are welcome, especially translations of the panel. The 
 
 ## License
 
-No license has been chosen yet: until one is added, all rights are reserved by the author.
+[MIT](LICENSE) – free to use, modify and share, as long as the copyright notice is kept.
