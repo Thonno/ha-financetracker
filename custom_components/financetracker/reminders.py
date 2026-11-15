@@ -19,11 +19,18 @@ from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerR
 _LOGGER = logging.getLogger(__name__)
 
 
-def euro(value: float, lang: str = "it") -> str:
+SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CNY": "¥", "INR": "₹", "KRW": "₩",
+           "BRL": "R$", "CAD": "CA$", "AUD": "A$", "NZD": "NZ$", "MXN": "MX$", "ILS": "₪", "TRY": "₺"}
+
+
+def money(value: float, currency: str = "EUR", lang: str = "it") -> str:
+    """Importo con la valuta, nel formato della lingua (12,50 € / €12.50 / 12,50 CHF)."""
+    sym = SYMBOLS.get(currency, currency)
     if lang == "it":
         text = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        return f"{text} €"
-    return f"€{value:,.2f}"
+        return f"{text} {sym}"
+    text = f"{value:,.2f}"
+    return f"{sym}{text}" if len(sym) <= 2 or sym.endswith("$") else f"{sym} {text}"
 
 
 def _services(manager: FinanceTrackerManager) -> list[str]:
@@ -60,14 +67,14 @@ class Reminders:
             for item in logic.recurring_due(manager.data["recurring"], manager.today()):
                 if item.get("notified_for") == item["next_due"]:
                     continue
-                await self._send(services, item)
+                await self._send(manager, services, item)
                 await manager.mark_notified(item)
 
-    async def _send(self, services: list[str], item: dict) -> None:
+    async def _send(self, manager: FinanceTrackerManager, services: list[str], item: dict) -> None:
         due = logic.parse_date(item["next_due"])
         lang = language(self.hass)
         when = f"{due:%d/%m}" if lang == "it" else f"{due:%d %b}"
-        message = f"{item['name']} · {euro(float(item['amount']), lang)} · {when}"
+        message = f"{item['name']} · {money(float(item['amount']), manager.currency, lang)} · {when}"
         if item.get("account"):
             message += f" ({item['account']})"
         data = {

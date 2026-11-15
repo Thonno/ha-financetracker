@@ -57,7 +57,7 @@
       "fields": {
         "amount": {
           "name": "Amount",
-          "description": "Amount in euro, always positive."
+          "description": "Amount in your archive's currency, always positive."
         },
         "type": {
           "name": "Type",

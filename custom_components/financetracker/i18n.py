@@ -40,6 +40,8 @@ MESSAGES: dict[str, dict[str, str]] = {
     "notify_register": {"it": "Registra", "en": "Register"},
     "notify_skip": {"it": "Salta", "en": "Skip"},
     "automation": {"it": "Automazione", "en": "Automation"},
+    "bad_currency": {"it": "Valuta non valida: {code} (usa un codice ISO di 3 lettere, es. EUR)",
+                     "en": "Invalid currency: {code} (use a 3-letter ISO code, e.g. EUR)"},
 }
 
 # Liste iniziali per un nuovo archivio

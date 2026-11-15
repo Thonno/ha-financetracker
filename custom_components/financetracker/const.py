@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 DOMAIN = "financetracker"
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 STORAGE_KEY = "financetracker.user_{}"
 INDEX_KEY = "financetracker.users"
@@ -30,5 +30,5 @@ DEFAULT_DATA = {
     "methods": ["Bancomat", "Carta", "Bonifico", "Addebito diretto", "Contanti"],
     "movements": [],
     "recurring": [],
-    "settings": {"notify_services": [], "sensors": False, "theme": "auto"},
+    "settings": {"notify_services": [], "sensors": False, "theme": "auto", "currency": None},
 }

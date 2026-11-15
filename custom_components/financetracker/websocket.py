@@ -26,7 +26,8 @@ async def _manager(hass: HomeAssistant, connection: websocket_api.ActiveConnecti
 
 def _snapshot(manager: FinanceTrackerManager) -> dict[str, Any]:
     return {**manager.data, "today": manager.today().isoformat(), "version": VERSION,
-            "user": manager.user_name}
+            "user": manager.user_name, "currency": manager.currency,
+            "ha_currency": getattr(manager.hass.config, "currency", None) or "EUR"}
 
 
 def _user(connection: websocket_api.ActiveConnection) -> str:
@@ -115,7 +116,8 @@ async def _export(m: FinanceTrackerManager, msg: dict, user: str):
 
 
 async def _prefs(m: FinanceTrackerManager, msg: dict, user: str):
-    return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"), msg.get("theme"))
+    return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"), msg.get("theme"),
+                              msg["currency"] if "currency" in msg else False)
 
 
 async def _targets(m: FinanceTrackerManager, msg: dict, user: str):
@@ -155,6 +157,7 @@ def async_register(hass: HomeAssistant) -> None:
             vol.Optional("notify_services"): [str],
             vol.Optional("sensors"): bool,
             vol.Optional("theme"): vol.In(["auto", "light", "dark"]),
+            vol.Optional("currency"): vol.Any(None, str),
         }, _prefs),
         ("financetracker/notify_targets", {}, _targets),
     ]

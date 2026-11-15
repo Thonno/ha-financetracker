@@ -131,8 +131,12 @@ class FinanceTrackerSensor(SensorEntity):
         self._attr_device_info = device
         if monetary:
             self._attr_device_class = SensorDeviceClass.MONETARY
-            self._attr_native_unit_of_measurement = "EUR"
             self._attr_suggested_display_precision = 2
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        # valuta dell'archivio dell'utente (quella di Home Assistant se non scelta)
+        return self._manager.currency if self._attr_device_class == SensorDeviceClass.MONETARY else None
 
     @property
     def native_value(self) -> Any:

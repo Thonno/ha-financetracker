@@ -57,7 +57,7 @@
       "fields": {
         "amount": {
           "name": "Importo",
-          "description": "Importo in euro, sempre positivo."
+          "description": "Importo nella valuta del tuo archivio, sempre positivo."
         },
         "type": {
           "name": "Tipo",

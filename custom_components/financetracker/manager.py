@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import uuid
 from datetime import date
 from typing import Any
@@ -57,6 +58,11 @@ class FinanceTrackerManager:
     @property
     def settings(self) -> dict[str, Any]:
         return self.data["settings"]
+
+    @property
+    def currency(self) -> str:
+        """Valuta dell'archivio: scelta dall'utente, altrimenti quella di Home Assistant."""
+        return self.settings.get("currency") or getattr(self.hass.config, "currency", None) or "EUR"
 
     async def _commit(self) -> None:
         self.data["movements"].sort(key=lambda m: (m["date"], m.get("created_at", "")))
@@ -169,13 +175,19 @@ class FinanceTrackerManager:
         await self._commit()
 
     async def save_prefs(self, notify_services: list[str] | None = None,
-                         sensors: bool | None = None, theme: str | None = None) -> dict:
+                         sensors: bool | None = None, theme: str | None = None,
+                         currency: str | None | bool = False) -> dict:
         if notify_services is not None:
             self.settings["notify_services"] = [str(s) for s in notify_services]
         if sensors is not None:
             self.settings["sensors"] = bool(sensors)
         if theme in ("auto", "light", "dark"):
             self.settings["theme"] = theme
+        if currency is not False:  # None / "" = segui Home Assistant
+            code = str(currency or "").strip().upper()
+            if code and not re.fullmatch(r"[A-Z]{3}", code):
+                raise FinanceTrackerError(tr(self.hass, "bad_currency", code=code))
+            self.settings["currency"] = code or None
         await self._commit()
         return self.settings
 

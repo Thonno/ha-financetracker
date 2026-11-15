@@ -8,7 +8,6 @@ add_transaction:
           min: 0
           step: 0.01
           mode: box
-          unit_of_measurement: "€"
     type:
       default: expense
       selector:
@@ -57,7 +56,6 @@ register_recurring_expense:
           min: 0
           step: 0.01
           mode: box
-          unit_of_measurement: "€"
     date:
       selector:
         date:

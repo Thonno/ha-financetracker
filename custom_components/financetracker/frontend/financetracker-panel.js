@@ -54,7 +54,7 @@ const EN = {
   "+ Nuova": "+ New", "Nome nuova categoria": "New category name", "Conto": "Account", "Metodo": "Method", "Data": "Date",
   "Oggi": "Today", "Ieri": "Yesterday", "Note": "Notes", "Facoltative, es. Da rimborsare": "Optional, e.g. to be reimbursed",
   "Conferma eliminazione": "Confirm delete", "Salva modifiche": "Save changes", "Spesa fissa": "Recurring expense",
-  "Nuova spesa fissa": "New recurring expense", "Es. Netflix": "E.g. Netflix", "Importo (€)": "Amount (€)", "Cadenza": "Frequency",
+  "Nuova spesa fissa": "New recurring expense", "Es. Netflix": "E.g. Netflix", "Importo ({0})": "Amount ({0})", "Cadenza": "Frequency",
   "Prossima scadenza": "Next due date", "Ultima rata (facoltativa)": "Last instalment (optional)", "Attiva": "Active",
   "Non ho trovato pagamenti di questa spesa nei movimenti importati: controlla la data della prossima scadenza.":
     "No payments for this expense were found in the imported transactions: check the next due date.",
@@ -69,23 +69,47 @@ const EN = {
   "Aspetto": "Appearance", "Tema del pannello": "Panel theme", "Automatico": "Automatic", "Chiaro": "Light", "Scuro": "Dark",
   "Automatico segue il tema di Home Assistant. La scelta vale su tutti i tuoi dispositivi.":
     "Automatic follows the Home Assistant theme. Your choice applies on all your devices.",
+  "Valuta": "Currency", "Valuta degli importi": "Currency of your amounts", "Come Home Assistant ({0})": "Same as Home Assistant ({0})",
+  "La valuta di Home Assistant si imposta in Impostazioni → Sistema → Informazioni sulla casa. Cambiare valuta non converte gli importi già registrati.":
+    "Home Assistant's currency is set in Settings → System → Home information. Changing currency does not convert amounts already recorded.",
+  "Valuta: {0}": "Currency: {0}", "Valuta di Home Assistant": "Home Assistant currency",
   "Tipo": "Type", "Conto destinazione": "Destination account", "Importo": "Amount", "Inserito da": "Added by",
 };
-let LANG = "it", LOCALE = "it-IT", DEC = ",";
+let LANG = "it", LOCALE = "it-IT", DEC = ",", CUR = "EUR", SYM = "€";
 let EUR, EUR0;
 const t = (s, ...args) => {
   let r = LANG === "it" ? s : (EN[s] ?? s);
   args.forEach((v, i) => { r = r.replace(`{${i}}`, v); });
   return r;
 };
+const tr = (...a) => t(...a); // alias usabile dove "t" è una variabile locale
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 function setLocale(lang) {
   LANG = String(lang || "en").toLowerCase().startsWith("it") ? "it" : "en";
   LOCALE = lang || (LANG === "it" ? "it-IT" : "en-GB");
   try { new Intl.NumberFormat(LOCALE); } catch (e) { LOCALE = LANG === "it" ? "it-IT" : "en-GB"; }
-  EUR = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
-  EUR0 = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
   DEC = (1.5).toLocaleString(LOCALE).includes(",") ? "," : ".";
+  buildMoney();
+}
+function setCurrency(code) { CUR = /^[A-Z]{3}$/.test(code || "") ? code : "EUR"; buildMoney(); }
+function buildMoney() {
+  try {
+    EUR = new Intl.NumberFormat(LOCALE, { style: "currency", currency: CUR });
+    EUR0 = new Intl.NumberFormat(LOCALE, { style: "currency", currency: CUR, maximumFractionDigits: 0 });
+  } catch (e) {
+    CUR = "EUR";
+    EUR = new Intl.NumberFormat(LOCALE, { style: "currency", currency: CUR });
+    EUR0 = new Intl.NumberFormat(LOCALE, { style: "currency", currency: CUR, maximumFractionDigits: 0 });
+  }
+  SYM = EUR.formatToParts(0).find((x) => x.type === "currency")?.value || CUR;
+}
+const COMMON_CUR = ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "BRL", "MXN", "INR", "CNY"];
+function currencyList() {
+  let all = COMMON_CUR;
+  try { if (Intl.supportedValuesOf) all = Intl.supportedValuesOf("currency"); } catch (e) { /* lista di base */ }
+  let names = null;
+  try { names = new Intl.DisplayNames([LOCALE], { type: "currency" }); } catch (e) { /* senza nomi */ }
+  return all.map((c) => [c, names ? `${c} — ${cap(names.of(c) || c)}` : c]);
 }
 setLocale("it");
 const CADENZE = { 1: "Mensile", 2: "Bimestrale", 3: "Trimestrale", 6: "Semestrale", 12: "Annuale" };
@@ -114,7 +138,7 @@ const shiftYm = (k, n) => { const [y, m] = k.split("-").map(Number); const d = n
 const dShort = (s) => parseD(s).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }).replace(".", "");
 const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const num = (v) => {
-  let s = String(v ?? "").replace(/[\s€]/g, "");
+  let s = String(v ?? "").replace(/[^\d.,-]/g, "");
   if (DEC === ",") { if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); }
   else s = s.replace(/,/g, "");
   const n = parseFloat(s); return Number.isFinite(n) ? n : NaN;
@@ -408,6 +432,7 @@ class FinanceTrackerPanel extends HTMLElement {
     this.data = d;
     this._themePref = null;
     this._applyTheme();
+    if (d.currency && d.currency !== CUR) setCurrency(d.currency);
     if (firstLoad) this._renderHeader();
     const now = ym(d.today);
     if (!this.f.month) this.f.month = now;
@@ -716,6 +741,10 @@ class FinanceTrackerPanel extends HTMLElement {
         <div class="seg">${[["auto", "Automatico"], ["light", "Chiaro"], ["dark", "Scuro"]].map(([k, l]) =>
           `<button class="${(this._themePref || d.settings?.theme || "auto") === k ? "on" : ""}" data-a="p-theme" data-v="${k}">${t(l)}</button>`).join("")}</div>
         <div class="sec" style="margin-top:10px">${t("Automatico segue il tema di Home Assistant. La scelta vale su tutti i tuoi dispositivi.")}</div></div>
+      <div class="card">${hd("mdi:cash-multiple", t("Valuta"), t("Valuta degli importi"))}
+        <select data-pref="currency"><option value="" ${!d.settings?.currency ? "selected" : ""}>${t("Come Home Assistant ({0})", esc(d.ha_currency || "EUR"))}</option>
+          ${currencyList().map(([c, l]) => `<option value="${c}" ${d.settings?.currency === c ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+        <div class="sec" style="margin-top:10px">${t("La valuta di Home Assistant si imposta in Impostazioni → Sistema → Informazioni sulla casa. Cambiare valuta non converte gli importi già registrati.")}</div></div>
       <div class="card">${hd("mdi:bell-outline", t("Promemoria spese fisse"), t("Dispositivi su cui ricevi le notifiche"))}
         ${this._targets ? (this._targets.length ? `<div class="chips">${this._targets.map((t) => `<button class="chip ${(d.settings?.notify_services || []).includes(t) ? "on" : ""}" data-a="p-notify" data-v="${esc(t)}">${esc(t.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " "))}</button>`).join("")}</div>` : `<div class="sec">${t("Nessun dispositivo di notifica trovato.")}</div>`) : `<div class="sec">${t("Caricamento…")}</div>`}
         <div class="sec" style="margin-top:10px">${t("L'orario si imposta in Impostazioni → Dispositivi e servizi → FinanceTracker → Configura.")}</div></div>
@@ -820,7 +849,7 @@ class FinanceTrackerPanel extends HTMLElement {
     return `<div class="hd"><div class="ico"><ha-icon icon="mdi:calendar-sync"></ha-icon></div><h3>${t(s.id ? "Spesa fissa" : "Nuova spesa fissa")}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
       <div class="bd">
         <label class="f">${t("Nome")}<input data-d="name" value="${esc(d.name)}" placeholder="${t("Es. Netflix")}"></label>
-        <div class="g2"><label class="f">${t("Importo (€)")}<input data-d="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
+        <div class="g2"><label class="f">${t("Importo ({0})", SYM)}<input data-d="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
           <label class="f">${t("Cadenza")}<select data-d="cadence_months">${Object.entries(CADENZE).map(([k, l]) => `<option value="${k}" ${Number(d.cadence_months) === Number(k) ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label></div>
         <div class="g2"><label class="f">${t("Categoria")}<select data-d="category">${this._catFreq("uscita").map((c) => `<option ${c === d.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
           <label class="f">${t("Metodo")}<select data-d="method"><option value="">—</option>${this.data.methods.map((x) => `<option ${x === d.method ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>
@@ -958,6 +987,13 @@ class FinanceTrackerPanel extends HTMLElement {
   _onChange(e) {
     const t = e.target;
     if (t.id === "file") return this._import(t.files[0]);
+    if (t.dataset.pref === "currency") {
+      this._keepScroll = true;
+      this.ws("financetracker/prefs/save", { currency: t.value || null })
+        .then(() => this.toast(t.value ? tr("Valuta: {0}", t.value) : tr("Valuta di Home Assistant")))
+        .catch((err) => this.toast(err?.message || String(err)));
+      return;
+    }
     if (t.dataset.f === "category" || t.dataset.f === "account") { this.f[t.dataset.f] = t.value; this._renderMain(); }
     else if (t.dataset.d && this.sheet) {
       this.sheet.draft[t.dataset.d] = t.type === "checkbox" ? t.checked : t.value;
