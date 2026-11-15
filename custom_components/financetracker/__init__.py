@@ -1,4 +1,4 @@
-"""Finanze: gestione manuale delle finanze personali dentro Home Assistant."""
+"""FinanceTracker: gestione manuale delle finanze personali dentro Home Assistant."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,61 +20,65 @@ from .const import (
     CONF_NOTIFY_TIME, DEFAULT_NOTIFY_TIME, DOMAIN, PANEL_COMPONENT, PANEL_URL, STATIC_URL, VERSION,
 )
 from .i18n import tr
-from .manager import FinanzeError, FinanzeManager, FinanzeRegistry
+from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerRegistry
 from .reminders import Reminders
 
 PLATFORMS = [Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-SERVICE_ADD = "aggiungi_movimento"
-SERVICE_REGISTER = "registra_spesa_fissa"
+SERVICE_ADD = "add_transaction"
+SERVICE_REGISTER = "register_recurring_expense"
+
+# valori accettati per "type" (inglese o italiano) -> valore interno
+TYPES = {"expense": "uscita", "income": "entrata", "transfer": "trasferimento",
+         "uscita": "uscita", "entrata": "entrata", "trasferimento": "trasferimento"}
 
 ADD_SCHEMA = vol.Schema({
-    vol.Required("importo"): vol.Coerce(float),
-    vol.Optional("tipo", default="uscita"): vol.In(["uscita", "entrata", "trasferimento"]),
-    vol.Optional("categoria", default=""): cv.string,
-    vol.Optional("descrizione", default=""): cv.string,
-    vol.Optional("conto", default=""): cv.string,
-    vol.Optional("conto_destinazione", default=""): cv.string,
-    vol.Optional("metodo", default=""): cv.string,
-    vol.Optional("data"): cv.date,
+    vol.Required("amount"): vol.Coerce(float),
+    vol.Optional("type", default="expense"): vol.All(cv.string, vol.Lower, vol.In(list(TYPES))),
+    vol.Optional("category", default=""): cv.string,
+    vol.Optional("description", default=""): cv.string,
+    vol.Optional("account", default=""): cv.string,
+    vol.Optional("to_account", default=""): cv.string,
+    vol.Optional("method", default=""): cv.string,
+    vol.Optional("date"): cv.date,
     vol.Optional("note", default=""): cv.string,
-    vol.Optional("utente"): cv.string,
+    vol.Optional("user"): cv.string,
 })
 REGISTER_SCHEMA = vol.Schema({
-    vol.Required("spesa"): cv.string,
-    vol.Optional("importo"): vol.Coerce(float),
-    vol.Optional("data"): cv.date,
-    vol.Optional("utente"): cv.string,
+    vol.Required("expense"): cv.string,
+    vol.Optional("amount"): vol.Coerce(float),
+    vol.Optional("date"): cv.date,
+    vol.Optional("user"): cv.string,
 })
 
 
 @dataclass
-class FinanzeRuntime:
-    registry: FinanzeRegistry
+class FinanceTrackerRuntime:
+    registry: FinanceTrackerRegistry
     reminders: Reminders
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket.async_register(hass)
 
-    async def _manager(call: ServiceCall) -> FinanzeManager:
+    async def _manager(call: ServiceCall) -> FinanceTrackerManager:
         """L'archivio è quello dell'utente che esegue l'azione, o di `utente` se indicato."""
-        registry: FinanzeRegistry | None = hass.data.get(DOMAIN)
+        registry: FinanceTrackerRegistry | None = hass.data.get(DOMAIN)
         if registry is None:
             raise ServiceValidationError(tr(hass, "not_configured"))
         try:
-            if name := call.data.get("utente"):
+            if name := call.data.get("user"):
                 manager = await registry.get_by_name(name)
                 caller = call.context.user_id
                 if caller and caller != manager.user_id:
                     user = await hass.auth.async_get_user(caller)
                     if not (user and user.is_admin):
-                        raise FinanzeError(tr(hass, "own_archive_only"))
+                        raise FinanceTrackerError(tr(hass, "own_archive_only"))
                 return manager
             if call.context.user_id:
                 return await registry.get(call.context.user_id)
-        except FinanzeError as err:
+        except FinanceTrackerError as err:
             raise ServiceValidationError(str(err)) from err
         raise ServiceValidationError(tr(hass, "need_user"))
 
@@ -87,24 +91,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         d = call.data
         try:
             m = await (await _manager(call)).add_movement({
-                "amount": d["importo"], "type": d["tipo"], "category": d["categoria"],
-                "description": d["descrizione"], "account": d["conto"],
-                "to_account": d["conto_destinazione"], "method": d["metodo"],
-                "date": d.get("data"), "note": d["note"],
+                "amount": d["amount"], "type": TYPES[d["type"]], "category": d["category"],
+                "description": d["description"], "account": d["account"],
+                "to_account": d["to_account"], "method": d["method"],
+                "date": d.get("date"), "note": d["note"],
             }, await _user(call))
-        except FinanzeError as err:
+        except FinanceTrackerError as err:
             raise ServiceValidationError(str(err)) from err
-        return {"movimento": m}
+        return {"transaction": m}
 
     async def register(call: ServiceCall) -> ServiceResponse:
         d = call.data
         try:
             m = await (await _manager(call)).register_recurring(
-                d["spesa"], d["data"].isoformat() if d.get("data") else None,
-                d.get("importo"), await _user(call))
-        except FinanzeError as err:
+                d["expense"], d["date"].isoformat() if d.get("date") else None,
+                d.get("amount"), await _user(call))
+        except FinanceTrackerError as err:
             raise ServiceValidationError(str(err)) from err
-        return {"movimento": m}
+        return {"transaction": m}
 
     hass.services.async_register(DOMAIN, SERVICE_ADD, add_movement, ADD_SCHEMA,
                                  supports_response=SupportsResponse.OPTIONAL)
@@ -114,7 +118,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    registry = FinanzeRegistry(hass)
+    registry = FinanceTrackerRegistry(hass)
     await registry.async_load()
     hass.data[DOMAIN] = registry
 
@@ -130,14 +134,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         webcomponent_name=PANEL_COMPONENT,
         sidebar_title="FinanceTracker",
         sidebar_icon="mdi:wallet-outline",
-        module_url=f"{STATIC_URL}/finanze-panel.js?v={VERSION}",
+        module_url=f"{STATIC_URL}/financetracker-panel.js?v={VERSION}",
         require_admin=False,
         config={},
     )
 
     reminders = Reminders(hass, registry, entry.options.get(CONF_NOTIFY_TIME, DEFAULT_NOTIFY_TIME))
     reminders.start()
-    entry.runtime_data = FinanzeRuntime(registry, reminders)
+    entry.runtime_data = FinanceTrackerRuntime(registry, reminders)
     entry.async_on_unload(entry.add_update_listener(_reload))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

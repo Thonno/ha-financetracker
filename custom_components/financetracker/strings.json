@@ -51,39 +51,39 @@
     }
   },
   "services": {
-    "aggiungi_movimento": {
+    "add_transaction": {
       "name": "Add transaction",
       "description": "Records an expense, income or transfer in the user's archive.",
       "fields": {
-        "importo": {
+        "amount": {
           "name": "Amount",
           "description": "Amount in euro, always positive."
         },
-        "tipo": {
+        "type": {
           "name": "Type",
-          "description": "uscita (expense), entrata (income) or trasferimento (transfer)."
+          "description": "Expense, income or transfer."
         },
-        "categoria": {
+        "category": {
           "name": "Category",
           "description": "Transaction category."
         },
-        "descrizione": {
+        "description": {
           "name": "Description",
           "description": "Free text."
         },
-        "conto": {
+        "account": {
           "name": "Account",
-          "description": "Account the transaction belongs to (empty = first account)."
+          "description": "Account of the transaction (empty = first account)."
         },
-        "conto_destinazione": {
+        "to_account": {
           "name": "Destination account",
           "description": "Transfers only."
         },
-        "metodo": {
+        "method": {
           "name": "Payment method",
           "description": "Debit card, credit card, PayPal…"
         },
-        "data": {
+        "date": {
           "name": "Date",
           "description": "Empty = today."
         },
@@ -91,32 +91,41 @@
           "name": "Notes",
           "description": "Optional notes."
         },
-        "utente": {
+        "user": {
           "name": "User",
           "description": "Automations only: name of the Home Assistant user whose archive to write to. Empty = the user running the action."
         }
       }
     },
-    "registra_spesa_fissa": {
+    "register_recurring_expense": {
       "name": "Register recurring expense",
       "description": "Records the instalment of a recurring expense and moves its due date forward.",
       "fields": {
-        "spesa": {
+        "expense": {
           "name": "Recurring expense",
           "description": "Name or id of the recurring expense."
         },
-        "importo": {
+        "amount": {
           "name": "Amount",
           "description": "Empty = expected amount."
         },
-        "data": {
+        "date": {
           "name": "Date",
           "description": "Empty = due date."
         },
-        "utente": {
+        "user": {
           "name": "User",
           "description": "Automations only: Home Assistant user name. Empty = the user running the action."
         }
+      }
+    }
+  },
+  "selector": {
+    "transaction_type": {
+      "options": {
+        "expense": "Expense",
+        "income": "Income",
+        "transfer": "Transfer"
       }
     }
   }

@@ -1,5 +1,5 @@
 {
-  "domain": "finanze",
+  "domain": "financetracker",
   "name": "FinanceTracker",
   "codeowners": [
     "@Thonno"
@@ -17,5 +17,5 @@
   "issue_tracker": "https://github.com/Thonno/ha-financetracker/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "1.2.0"
+  "version": "2.0.0"
 }

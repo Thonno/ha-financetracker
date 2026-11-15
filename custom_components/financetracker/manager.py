@@ -1,4 +1,4 @@
-"""Archivio dati e operazioni dell'integrazione Finanze."""
+"""Archivio dati e operazioni dell'integrazione FinanceTracker."""
 from __future__ import annotations
 
 import copy
@@ -30,12 +30,12 @@ def _new_id() -> str:
     return uuid.uuid4().hex[:12]
 
 
-class FinanzeError(HomeAssistantError):
+class FinanceTrackerError(HomeAssistantError):
     """Errore mostrato all'utente."""
 
 
-class FinanzeManager:
-    """Dati di UN utente, salvati in .storage/finanze.utente_<id utente>."""
+class FinanceTrackerManager:
+    """Dati di UN utente, salvati in .storage/financetracker.user_<id utente>."""
 
     def __init__(self, hass: HomeAssistant, user_id: str, user_name: str = "") -> None:
         self.hass = hass
@@ -72,13 +72,13 @@ class FinanzeManager:
         for item in self.data[key]:
             if item["id"] == item_id:
                 return item
-        raise FinanzeError(tr(self.hass, "not_found", ref=item_id))
+        raise FinanceTrackerError(tr(self.hass, "not_found", ref=item_id))
 
     def find_recurring(self, ref: str) -> dict:
         for item in self.data["recurring"]:
             if item["id"] == ref or item["name"].lower() == str(ref).lower():
                 return item
-        raise FinanzeError(tr(self.hass, "recurring_not_found", ref=ref))
+        raise FinanceTrackerError(tr(self.hass, "recurring_not_found", ref=ref))
 
     def _account_names(self) -> list[str]:
         return [a["name"] for a in self.data["accounts"]]
@@ -90,13 +90,13 @@ class FinanzeManager:
                 m[key] = raw[key]
         m["type"] = str(m.get("type", logic.TIPO_USCITA)).lower()
         if m["type"] not in logic.TIPI:
-            raise FinanzeError(tr(self.hass, "bad_type", type=m["type"]))
+            raise FinanceTrackerError(tr(self.hass, "bad_type", type=m["type"]))
         try:
             m["amount"] = round(abs(float(str(m.get("amount", "")).replace(",", "."))), 2)
         except ValueError as err:
-            raise FinanzeError(tr(self.hass, "bad_amount")) from err
+            raise FinanceTrackerError(tr(self.hass, "bad_amount")) from err
         if m["amount"] <= 0:
-            raise FinanzeError(tr(self.hass, "amount_positive"))
+            raise FinanceTrackerError(tr(self.hass, "amount_positive"))
         m["date"] = logic.parse_date(m.get("date") or self.today()).isoformat()
         for key in ("category", "description", "method", "account", "to_account", "note"):
             m[key] = str(m.get(key) or "").strip()
@@ -104,10 +104,10 @@ class FinanzeManager:
         if not m["account"] and accounts:
             m["account"] = accounts[0]
         if m["account"] not in accounts:
-            raise FinanzeError(tr(self.hass, "unknown_account", account=m["account"]))
+            raise FinanceTrackerError(tr(self.hass, "unknown_account", account=m["account"]))
         if m["type"] == logic.TIPO_TRASFERIMENTO:
             if m["to_account"] not in accounts or m["to_account"] == m["account"]:
-                raise FinanzeError(tr(self.hass, "transfer_accounts"))
+                raise FinanceTrackerError(tr(self.hass, "transfer_accounts"))
         else:
             m["to_account"] = ""
         return m
@@ -144,7 +144,7 @@ class FinanzeManager:
                             methods: list[str], renames: dict[str, dict[str, str]]) -> None:
         names = [str(a["name"]).strip() for a in accounts]
         if not names or any(not n for n in names) or len(set(names)) != len(names):
-            raise FinanzeError(tr(self.hass, "account_names"))
+            raise FinanceTrackerError(tr(self.hass, "account_names"))
         ren_acc = renames.get("accounts", {})
         ren_cat = renames.get("categories", {})
         ren_met = renames.get("methods", {})
@@ -185,7 +185,7 @@ class FinanzeManager:
                 item[key] = raw[key]
         item["name"] = str(item.get("name") or "").strip()
         if not item["name"]:
-            raise FinanzeError(tr(self.hass, "recurring_name"))
+            raise FinanceTrackerError(tr(self.hass, "recurring_name"))
         item["amount"] = round(abs(float(item.get("amount") or 0)), 2)
         item["cadence_months"] = int(item.get("cadence_months") or 1)
         due = logic.parse_date(item.get("next_due") or self.today())
@@ -232,8 +232,8 @@ class FinanzeManager:
 
     # ------------------------------------------------------------ import/export
     async def import_data(self, payload: dict, mode: str = "replace") -> dict[str, int]:
-        if payload.get("format") != "finanze":
-            raise FinanzeError(tr(self.hass, "bad_file"))
+        if payload.get("format") not in ("financetracker", "finanze"):
+            raise FinanceTrackerError(tr(self.hass, "bad_file"))
         if mode == "replace":
             settings = self.data["settings"]
             self.data = {key: copy.deepcopy(payload.get(key, DEFAULT_DATA[key])) for key in DEFAULT_DATA}
@@ -259,17 +259,17 @@ class FinanzeManager:
         return {"movimenti": len(self.data["movements"]), "spese_fisse": len(self.data["recurring"])}
 
     def export_data(self) -> dict:
-        out = {"format": "finanze", "version": 1, **copy.deepcopy(self.data)}
+        out = {"format": "financetracker", "version": 1, **copy.deepcopy(self.data)}
         out.pop("settings", None)
         return out
 
 
-class FinanzeRegistry:
+class FinanceTrackerRegistry:
     """Un archivio separato per ogni utente di Home Assistant."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
-        self.managers: dict[str, FinanzeManager] = {}
+        self.managers: dict[str, FinanceTrackerManager] = {}
         self._index: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, INDEX_KEY)
         self._known: list[str] = []
 
@@ -282,34 +282,34 @@ class FinanzeRegistry:
                 continue  # utente eliminato: il file resta, ma non viene caricato
             await self._load(user_id, user.name or "")
 
-    async def _load(self, user_id: str, name: str) -> FinanzeManager:
-        manager = FinanzeManager(self.hass, user_id, name)
+    async def _load(self, user_id: str, name: str) -> FinanceTrackerManager:
+        manager = FinanceTrackerManager(self.hass, user_id, name)
         await manager.async_load()
         self.managers[user_id] = manager
         return manager
 
-    async def get(self, user_id: str | None) -> FinanzeManager:
+    async def get(self, user_id: str | None) -> FinanceTrackerManager:
         if not user_id:
-            raise FinanzeError(tr(self.hass, "unknown_user"))
+            raise FinanceTrackerError(tr(self.hass, "unknown_user"))
         if user_id in self.managers:
             return self.managers[user_id]
         user = await self.hass.auth.async_get_user(user_id)
         if user is None or user.system_generated:
-            raise FinanzeError(tr(self.hass, "invalid_user"))
+            raise FinanceTrackerError(tr(self.hass, "invalid_user"))
         manager = await self._load(user_id, user.name or "")
         if user_id not in self._known:
             self._known.append(user_id)
             await self._index.async_save({"users": self._known})
         return manager
 
-    async def get_by_name(self, name: str) -> FinanzeManager:
+    async def get_by_name(self, name: str) -> FinanceTrackerManager:
         wanted = name.strip().lower()
         for user in await self.hass.auth.async_get_users():
             if not user.system_generated and (user.name or "").strip().lower() == wanted:
                 return await self.get(user.id)
-        raise FinanzeError(tr(self.hass, "no_such_user", name=name))
+        raise FinanceTrackerError(tr(self.hass, "no_such_user", name=name))
 
-    def find_item_owner(self, item_id: str) -> FinanzeManager | None:
+    def find_item_owner(self, item_id: str) -> FinanceTrackerManager | None:
         for manager in self.managers.values():
             if any(r["id"] == item_id for r in manager.data["recurring"]):
                 return manager

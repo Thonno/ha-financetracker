@@ -1,25 +1,25 @@
-"""Costanti dell'integrazione Finanze."""
+"""Costanti dell'integrazione FinanceTracker."""
 from __future__ import annotations
 
-DOMAIN = "finanze"
-VERSION = "1.2.0"
+DOMAIN = "financetracker"
+VERSION = "2.0.0"
 
-STORAGE_KEY = "finanze.utente_{}"
-INDEX_KEY = "finanze.utenti"
+STORAGE_KEY = "financetracker.user_{}"
+INDEX_KEY = "financetracker.users"
 STORAGE_VERSION = 1
 
-PANEL_URL = "finanze"
-PANEL_COMPONENT = "finanze-panel"
-STATIC_URL = "/finanze_static"
+PANEL_URL = "financetracker"
+PANEL_COMPONENT = "financetracker-panel"
+STATIC_URL = "/financetracker_static"
 
-SIGNAL_UPDATED = "finanze_updated_{}"
-SIGNAL_ANY = "finanze_updated"
+SIGNAL_UPDATED = "financetracker_updated_{}"
+SIGNAL_ANY = "financetracker_updated"
 
 CONF_NOTIFY_TIME = "notify_time"
 DEFAULT_NOTIFY_TIME = "09:00:00"
 
-ACTION_REGISTER = "FINANZE_REG_"
-ACTION_SKIP = "FINANZE_SKIP_"
+ACTION_REGISTER = "FINANCETRACKER_REG_"
+ACTION_SKIP = "FINANCETRACKER_SKIP_"
 
 DEFAULT_DATA = {
     "accounts": [

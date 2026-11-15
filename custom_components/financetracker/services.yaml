@@ -1,6 +1,6 @@
-aggiungi_movimento:
+add_transaction:
   fields:
-    importo:
+    amount:
       required: true
       example: 12.50
       selector:
@@ -9,58 +9,59 @@ aggiungi_movimento:
           step: 0.01
           mode: box
           unit_of_measurement: "€"
-    tipo:
-      default: uscita
+    type:
+      default: expense
       selector:
         select:
-          options: ["uscita", "entrata", "trasferimento"]
-    categoria:
-      example: Spesa
+          translation_key: transaction_type
+          options: ["expense", "income", "transfer"]
+    category:
+      example: Groceries
       selector:
         text:
-    descrizione:
-      example: Coop
+    description:
+      example: Supermarket
       selector:
         text:
-    conto:
-      example: Conto corrente
+    account:
+      example: Current account
       selector:
         text:
-    conto_destinazione:
+    to_account:
       selector:
         text:
-    metodo:
-      example: Bancomat
+    method:
+      example: Debit card
       selector:
         text:
-    data:
+    date:
       selector:
         date:
     note:
       selector:
         text:
-    utente:
+    user:
       example: Mario
       selector:
         text:
-registra_spesa_fissa:
+register_recurring_expense:
   fields:
-    spesa:
+    expense:
       required: true
-      example: Mutuo
+      example: Netflix
       selector:
         text:
-    importo:
+    amount:
       selector:
         number:
           min: 0
           step: 0.01
           mode: box
           unit_of_measurement: "€"
-    data:
+    date:
       selector:
         date:
-    utente:
+    user:
       example: Mario
       selector:
         text:

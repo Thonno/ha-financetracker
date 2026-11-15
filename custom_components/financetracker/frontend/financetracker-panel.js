@@ -338,7 +338,7 @@ const tint = (c) => { const h = hue(c); return `background:hsla(${h},70%,60%,.14
 const tile = (label, value, cls = "", sub = "", icon = "") =>
   `<div class="tile"><div class="l">${icon ? `<ha-icon icon="${icon}"></ha-icon>` : ""}${label}</div><div class="v ${cls}">${value}</div>${sub ? `<div class="s">${sub}</div>` : ""}</div>`;
 
-class FinanzePanel extends HTMLElement {
+class FinanceTrackerPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -376,7 +376,7 @@ class FinanzePanel extends HTMLElement {
   _subscribe() {
     if (!this._hass || this._unsub) return;
     if (!this._built) this._build();
-    this._unsub = this._hass.connection.subscribeMessage((d) => this._onData(d), { type: "finanze/subscribe" });
+    this._unsub = this._hass.connection.subscribeMessage((d) => this._onData(d), { type: "financetracker/subscribe" });
     this._unsub.catch((e) => { this._unsub = null; this.$main.innerHTML = `<div class="loading">${t("Errore: {0}", esc(e.message || e.code || e))}</div>`; });
   }
 
@@ -655,7 +655,7 @@ class FinanzePanel extends HTMLElement {
     const d = this.data;
     if (!this._targets && !this._loadingTargets) {
       this._loadingTargets = true;
-      this.ws("finanze/notify_targets").then((t) => { this._targets = t; this._keepScroll = true; if (this.view === "impostazioni") this._renderMain(); }).catch(() => { this._targets = []; });
+      this.ws("financetracker/notify_targets").then((t) => { this._targets = t; this._keepScroll = true; if (this.view === "impostazioni") this._renderMain(); }).catch(() => { this._targets = []; });
     }
     if (!this.settingsDraft) {
       this.settingsDraft = {
@@ -864,21 +864,21 @@ class FinanzePanel extends HTMLElement {
         case "mov-save": await this._saveMovement(); break;
         case "mov-del":
           if (!s.confirm) { s.confirm = true; this._renderSheet(); break; }
-          await this.ws("finanze/movement/delete", { id_movimento: s.id }); this._closeSheet(); this.toast(t("Movimento eliminato")); break;
+          await this.ws("financetracker/movement/delete", { id_movimento: s.id }); this._closeSheet(); this.toast(t("Movimento eliminato")); break;
         // spese fisse
         case "rec-new": this._openRecurring(null); break;
         case "rec-edit": this._openRecurring(this.data.recurring.find((r) => r.id === id)); break;
         case "rec-save": await this._saveRecurring(); break;
         case "rec-del":
           if (!s.confirm) { s.confirm = true; this._renderSheet(); break; }
-          await this.ws("finanze/recurring/delete", { id_spesa: s.id }); this._closeSheet(); this.toast(t("Spesa fissa eliminata")); break;
+          await this.ws("financetracker/recurring/delete", { id_spesa: s.id }); this._closeSheet(); this.toast(t("Spesa fissa eliminata")); break;
         case "rec-reg": case "rec-reg-now": {
           el.disabled = true;
-          const m = await this.ws("finanze/recurring/register", { id_spesa: id, ...(a === "rec-reg-now" ? { date: this.data.today } : {}) });
+          const m = await this.ws("financetracker/recurring/register", { id_spesa: id, ...(a === "rec-reg-now" ? { date: this.data.today } : {}) });
           if (a === "rec-reg-now") this._closeSheet();
           this.toast(t("Registrata: {0} {1}", m.description, eur(m.amount))); break;
         }
-        case "rec-skip": el.disabled = true; await this.ws("finanze/recurring/skip", { id_spesa: id }); this.toast(t("Scadenza saltata")); break;
+        case "rec-skip": el.disabled = true; await this.ws("financetracker/recurring/skip", { id_spesa: id }); this.toast(t("Scadenza saltata")); break;
         // impostazioni
         case "s-add": this.settingsDraft[el.dataset.k].push(el.dataset.k === "accounts" ? { name: "", initial_balance: 0 } : { name: "" }); this._keepScroll = true; this._renderMain(); break;
         case "s-del": this.settingsDraft[el.dataset.k].splice(Number(el.dataset.i), 1); this._keepScroll = true; this._renderMain(); break;
@@ -888,17 +888,17 @@ class FinanzePanel extends HTMLElement {
           const cur = new Set(this.data.settings?.notify_services || []);
           cur.has(v) ? cur.delete(v) : cur.add(v);
           this._keepScroll = true;
-          await this.ws("finanze/prefs/save", { notify_services: [...cur] });
+          await this.ws("financetracker/prefs/save", { notify_services: [...cur] });
           const dev = v.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " ");
           this.toast(t(cur.has(v) ? "Notifiche attive su {0}" : "Notifiche disattivate su {0}", dev)); break;
         }
         case "p-sensors": {
           const on = !this.data.settings?.sensors;
           this._keepScroll = true;
-          await this.ws("finanze/prefs/save", { sensors: on });
+          await this.ws("financetracker/prefs/save", { sensors: on });
           this.toast(t(on ? "Sensori creati" : "Sensori rimossi")); break;
         }
-        case "export-json": this._download(`financetracker-${this.data.today}.json`, JSON.stringify(await this.ws("finanze/export"), null, 1), "application/json"); break;
+        case "export-json": this._download(`financetracker-${this.data.today}.json`, JSON.stringify(await this.ws("financetracker/export"), null, 1), "application/json"); break;
         case "export-csv": this._download(`financetracker-${t("Movimenti").toLowerCase()}-${this.data.today}.csv`, this._csv(), "text/csv"); break;
         case "import": this._importMode = v; this.shadowRoot.getElementById("file").click(); break;
       }
@@ -954,8 +954,8 @@ class FinanzePanel extends HTMLElement {
       account: d.account, to_account: d.type === "trasferimento" ? d.to_account : "",
       method: d.method || "", note: (d.note || "").trim(),
     };
-    if (s.id) await this.ws("finanze/movement/update", { id_movimento: s.id, movement });
-    else await this.ws("finanze/movement/add", { movement });
+    if (s.id) await this.ws("financetracker/movement/update", { id_movimento: s.id, movement });
+    else await this.ws("financetracker/movement/add", { movement });
     this._closeSheet();
     this.toast(s.id ? t("Modifiche salvate") : t("Aggiunto {0}", eur(amount)));
   }
@@ -966,7 +966,7 @@ class FinanzePanel extends HTMLElement {
     if (!d.name.trim()) { this.toast(t("Dai un nome alla spesa")); return; }
     if (!(amount > 0)) { this.toast(t("Inserisci un importo")); return; }
     const due = d.next_due || this.data.today;
-    await this.ws("finanze/recurring/save", { item: {
+    await this.ws("financetracker/recurring/save", { item: {
       ...(this.sheet.id ? { id: this.sheet.id } : {}),
       name: d.name.trim(), amount, category: d.category, cadence_months: Number(d.cadence_months),
       method: d.method, account: d.account, next_due: due, day_of_month: parseD(due).getDate(),
@@ -984,7 +984,7 @@ class FinanzePanel extends HTMLElement {
       return x;
     });
     const accounts = clean("accounts").map((a) => ({ name: a.name.trim(), initial_balance: num(a.initial_balance) || 0, hidden: !!a.hidden }));
-    await this.ws("finanze/settings/save", {
+    await this.ws("financetracker/settings/save", {
       accounts, categories: clean("categories").map((c) => c.name.trim()),
       methods: clean("methods").map((c) => c.name.trim()), renames,
     });
@@ -996,7 +996,7 @@ class FinanzePanel extends HTMLElement {
     if (!file) return;
     try {
       const payload = JSON.parse(await file.text());
-      const res = await this.ws("finanze/import", { payload, mode: this._importMode === "replace" ? "replace" : "merge" });
+      const res = await this.ws("financetracker/import", { payload, mode: this._importMode === "replace" ? "replace" : "merge" });
       this.settingsDraft = null;
       this.toast(t("Importati: {0} movimenti, {1} spese fisse", res.movimenti, res.spese_fisse));
     } catch (err) {
@@ -1019,4 +1019,4 @@ class FinanzePanel extends HTMLElement {
   }
 }
 
-if (!customElements.get("finanze-panel")) customElements.define("finanze-panel", FinanzePanel);
+if (!customElements.get("financetracker-panel")) customElements.define("financetracker-panel", FinanceTrackerPanel);

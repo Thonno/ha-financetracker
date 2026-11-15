@@ -23,7 +23,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Account names must be unique and not empty",
     },
     "recurring_name": {"it": "Dai un nome alla spesa fissa", "en": "Give the recurring expense a name"},
-    "bad_file": {"it": "File non riconosciuto: serve un export di Finanze", "en": "Unrecognised file: a FinanceTracker export is required"},
+    "bad_file": {"it": "File non riconosciuto: serve un export di FinanceTracker", "en": "Unrecognised file: a FinanceTracker export is required"},
     "unknown_user": {"it": "Utente sconosciuto", "en": "Unknown user"},
     "invalid_user": {"it": "Utente non valido", "en": "Invalid user"},
     "no_such_user": {
@@ -33,8 +33,8 @@ MESSAGES: dict[str, dict[str, str]] = {
     "not_configured": {"it": "FinanceTracker non è configurato", "en": "FinanceTracker is not set up"},
     "own_archive_only": {"it": "Puoi scrivere solo nel tuo archivio", "en": "You can only write to your own archive"},
     "need_user": {
-        "it": "Chiamata da un'automazione: indica in «utente» il nome dell'utente di Home Assistant",
-        "en": "Called from an automation: set “utente” to the Home Assistant user name",
+        "it": "Chiamata da un'automazione: indica in «user» il nome dell'utente di Home Assistant",
+        "en": "Called from an automation: set “user” to the Home Assistant user name",
     },
     "notify_title": {"it": "Spesa fissa in scadenza", "en": "Recurring expense due"},
     "notify_register": {"it": "Registra", "en": "Register"},

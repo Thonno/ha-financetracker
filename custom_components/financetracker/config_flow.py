@@ -19,7 +19,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
     })
 
 
-class FinanzeConfigFlow(ConfigFlow, domain=DOMAIN):
+class FinanceTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -32,10 +32,10 @@ class FinanzeConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return FinanzeOptionsFlow()
+        return FinanceTrackerOptionsFlow()
 
 
-class FinanzeOptionsFlow(OptionsFlow):
+class FinanceTrackerOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)

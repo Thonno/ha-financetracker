@@ -1,4 +1,7 @@
-# Finance Tracker for Home Assistant
+# FinanceTracker for Home Assistant
+
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thonno&repository=ha-financetracker&category=integration)
+[![Open your Home Assistant instance and start setting up FinanceTracker.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=financetracker)
 
 A personal finance tracker that lives inside Home Assistant. You log income and expenses by hand – no bank connection, no receipt scanning, no cloud service – and get balances, monthly reports and reminders for recurring payments, from a sidebar panel designed for the Home Assistant Companion app on your phone.
 
@@ -14,7 +17,7 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 - **Recurring expenses**: monthly, bimonthly, quarterly, half-yearly or yearly, with an optional last-instalment date. When one is due you get an actionable notification with **Register** / **Skip** buttons; answering on one device clears it everywhere.
 - **One private archive per Home Assistant user**: each person who opens the panel sees only their own data (see [Privacy](#privacy-and-multi-user-behaviour)).
 - **Optional sensors** for dashboards and automations, enabled per user.
-- **Actions** (`finanze.aggiungi_movimento`, `finanze.registra_spesa_fissa`) for scripts, automations and voice assistants.
+- **Actions** (`financetracker.add_transaction`, `financetracker.register_recurring_expense`) for scripts, automations and voice assistants.
 - **Import / export**: JSON backup and restore, CSV export, and a converter for existing spreadsheets.
 
 ## Requirements
@@ -27,14 +30,16 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 ### HACS (recommended)
 
+Click the first button at the top of this page to open the repository directly in your Home Assistant's HACS, then download it and restart. Or do it by hand:
+
 1. In HACS open the menu (⋮) → **Custom repositories**.
 2. Add `https://github.com/Thonno/ha-financetracker` with type **Integration**.
 3. Search for **FinanceTracker**, download it, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration → FinanceTracker** and choose the time of day for reminders.
+4. Go to **Settings → Devices & services → Add integration → FinanceTracker** (or click the second button at the top) and choose the time of day for reminders.
 
 ### Manual
 
-Copy `custom_components/finanze` into your Home Assistant `config/custom_components/` folder (for example with the Samba or File editor add-on), restart Home Assistant, then add the integration as in step 4 above.
+Copy `custom_components/financetracker` into your Home Assistant `config/custom_components/` folder (for example with the Samba or File editor add-on), restart Home Assistant, then add the integration as in step 4 above.
 
 ## First steps
 
@@ -45,7 +50,7 @@ Copy `custom_components/finanze` into your Home Assistant `config/custom_compone
 
 ## Privacy and multi-user behaviour
 
-- Each Home Assistant user gets a separate archive, stored in `.storage/finanze.utente_<user id>`. The panel, the actions and the reminders only ever read or write the archive of the signed-in user.
+- Each Home Assistant user gets a separate archive, stored in `.storage/financetracker.user_<user id>`. The panel, the actions and the reminders only ever read or write the archive of the signed-in user.
 - Notification buttons are only accepted from the user who owns the recurring expense.
 - Data stays on your Home Assistant instance and is included in its regular backups.
 - **Limitation:** Home Assistant has no per-user encryption. An administrator with access to the configuration files or to a backup can read every archive.
@@ -67,28 +72,28 @@ Turn them on in the panel under **Settings → Sensors in Home Assistant**. Each
 
 ## Actions
 
-Both actions write to the archive of the user who runs them. Automations run without a user, so pass `utente` with the Home Assistant user name. Only administrators can write to someone else's archive.
+Both actions write to the archive of the user who runs them. Automations run without a user, so pass `user` with the Home Assistant user name. Only administrators can write to someone else's archive.
 
 ```yaml
-action: finanze.aggiungi_movimento
+action: financetracker.add_transaction
 data:
-  importo: 12.50           # amount, always positive
-  tipo: uscita             # uscita (expense) | entrata (income) | trasferimento (transfer)
-  categoria: Groceries
-  descrizione: Supermarket
-  conto: Current account
-  metodo: Debit card
-  utente: Mario            # only needed in automations
+  amount: 12.50             # always positive
+  type: expense             # expense | income | transfer
+  category: Groceries
+  description: Supermarket
+  account: Current account
+  method: Debit card
+  user: Mario               # only needed in automations
 ```
 
 ```yaml
-action: finanze.registra_spesa_fissa
+action: financetracker.register_recurring_expense
 data:
-  spesa: Netflix           # name or id of the recurring expense
-  utente: Mario
+  expense: Netflix          # name or id of the recurring expense
+  user: Mario
 ```
 
-Both actions return the created transaction as response data.
+Both actions return the created transaction as response data (`transaction`).
 
 ## Import and export
 
@@ -101,11 +106,11 @@ From **Settings → Data** in the panel:
 
 ### Coming from a spreadsheet
 
-`tools/excel_to_finanze.py` converts an Excel workbook into the JSON import format. It expects sheets named `Movimenti` (transactions), `Liste` (lists of categories, methods, accounts and opening balances) and `Spese fisse` (recurring expenses). Adapt it to your own layout if needed.
+`tools/excel_to_financetracker.py` converts an Excel workbook into the JSON import format. It expects sheets named `Movimenti` (transactions), `Liste` (lists of categories, methods, accounts and opening balances) and `Spese fisse` (recurring expenses). Adapt it to your own layout if needed.
 
 ```bash
 pip install openpyxl
-python3 tools/excel_to_finanze.py my_finances.xlsx finanze_import.json \
+python3 tools/excel_to_financetracker.py my_finances.xlsx financetracker_import.json \
     --principale "Current account" --deposito "Savings"
 ```
 
@@ -115,9 +120,7 @@ The JSON format is simple: `accounts`, `categories`, `methods`, `movements` and 
 
 ## Contributing
 
-Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/finanze/frontend/finanze-panel.js`; its strings are in the `EN` table at the top of the file, keyed by the Italian text. Server-side texts are in `i18n.py` and `translations/`. Calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
-
-The integration's internal domain is `finanze` (used in action names such as `finanze.aggiungi_movimento`).
+Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/financetracker/frontend/financetracker-panel.js`; its strings are in the `EN` table at the top of the file, keyed by the Italian text. Server-side texts are in `i18n.py` and `translations/`. Calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
 
 ## License
 

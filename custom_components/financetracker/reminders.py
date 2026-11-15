@@ -14,7 +14,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_chang
 from . import logic
 from .i18n import language, tr
 from .const import ACTION_REGISTER, ACTION_SKIP, PANEL_URL
-from .manager import FinanzeError, FinanzeManager, FinanzeRegistry
+from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerRegistry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,14 +26,14 @@ def euro(value: float, lang: str = "it") -> str:
     return f"€{value:,.2f}"
 
 
-def _services(manager: FinanzeManager) -> list[str]:
+def _services(manager: FinanceTrackerManager) -> list[str]:
     return [s.removeprefix("notify.") for s in manager.settings.get("notify_services", [])]
 
 
 class Reminders:
     """Controlla ogni giorno le scadenze e gestisce le risposte dalle notifiche."""
 
-    def __init__(self, hass: HomeAssistant, registry: FinanzeRegistry, notify_time: str) -> None:
+    def __init__(self, hass: HomeAssistant, registry: FinanceTrackerRegistry, notify_time: str) -> None:
         self.hass = hass
         self.registry = registry
         self.at = time.fromisoformat(notify_time)
@@ -71,8 +71,8 @@ class Reminders:
         if item.get("account"):
             message += f" ({item['account']})"
         data = {
-            "tag": f"finanze_{item['id']}",
-            "group": "finanze",
+            "tag": f"financetracker_{item['id']}",
+            "group": "financetracker",
             "url": f"/{PANEL_URL}",
             "clickAction": f"/{PANEL_URL}",
             "actions": [
@@ -96,7 +96,7 @@ class Reminders:
             try:
                 await self.hass.services.async_call(
                     "notify", service,
-                    {"message": "clear_notification", "data": {"tag": f"finanze_{item_id}"}},
+                    {"message": "clear_notification", "data": {"tag": f"financetracker_{item_id}"}},
                     blocking=False,
                 )
             except Exception:  # noqa: BLE001
@@ -122,7 +122,7 @@ class Reminders:
                 await manager.register_recurring(item_id, user=manager.user_name)
             else:
                 await manager.skip_recurring(item_id)
-        except FinanzeError as err:
+        except FinanceTrackerError as err:
             _LOGGER.warning("Azione %s ignorata: %s", action, err)
             return
         await self._clear(_services(manager), item_id)

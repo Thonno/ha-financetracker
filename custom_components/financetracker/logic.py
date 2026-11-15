@@ -1,4 +1,4 @@
-"""Calcoli puri (nessuna dipendenza da Home Assistant) per l'integrazione Finanze."""
+"""Calcoli puri (nessuna dipendenza da Home Assistant) per l'integrazione FinanceTracker."""
 from __future__ import annotations
 
 import calendar

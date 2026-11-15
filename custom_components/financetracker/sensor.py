@@ -19,10 +19,10 @@ from homeassistant.util import slugify
 from . import logic
 from .const import DOMAIN, SIGNAL_ANY
 from .i18n import attr
-from .manager import FinanzeManager
+from .manager import FinanceTrackerManager
 
 
-def _month_totals(m: FinanzeManager) -> dict:
+def _month_totals(m: FinanceTrackerManager) -> dict:
     today = m.today()
     return logic.period_totals(m.data["movements"], *logic.month_bounds(today.year, today.month))
 
@@ -33,26 +33,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     created: dict[str, set[str]] = {}  # user_id -> unique_id creati
     ent_reg = er.async_get(hass)
 
-    def build(manager: FinanzeManager) -> list[FinanzeSensor]:
+    def build(manager: FinanceTrackerManager) -> list[FinanceTrackerSensor]:
         uid = manager.user_id
         device = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_{uid}")},
             name=f"FinanceTracker {manager.user_name}".strip(),
             manufacturer="FinanceTracker",
             entry_type=DeviceEntryType.SERVICE,
-            configuration_url="/finanze",
+            configuration_url="/financetracker",
         )
         known = created.setdefault(uid, set())
         a = lambda key: attr(hass, key)  # noqa: E731 - nome attributo nella lingua di HA
 
         def mk(key: str, translation_key: str, icon: str, value: Callable[[], Any],
                attrs: Callable[[], dict] | None = None, monetary: bool = True,
-               placeholders: dict[str, str] | None = None) -> FinanzeSensor | None:
+               placeholders: dict[str, str] | None = None) -> FinanceTrackerSensor | None:
             unique = f"{entry.entry_id}_{uid}_{key}"
             if unique in known:
                 return None
             known.add(unique)
-            return FinanzeSensor(manager, device, unique, translation_key, placeholders,
+            return FinanceTrackerSensor(manager, device, unique, translation_key, placeholders,
                                  icon, value, attrs, monetary)
 
         def month_bounds():
@@ -85,7 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             placeholders={"account": name}))
         return [e for e in items if e is not None]
 
-    entities: list[FinanzeSensor] = []
+    entities: list[FinanceTrackerSensor] = []
     for manager in registry.managers.values():
         if manager.settings.get("sensors"):
             entities += build(manager)
@@ -112,11 +112,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     entry.async_on_unload(async_dispatcher_connect(hass, SIGNAL_ANY, on_update))
 
 
-class FinanzeSensor(SensorEntity):
+class FinanceTrackerSensor(SensorEntity):
     _attr_has_entity_name = True
     _attr_should_poll = True  # aggiorna anche al cambio di giorno / mese
 
-    def __init__(self, manager: FinanzeManager, device: DeviceInfo, unique_id: str,
+    def __init__(self, manager: FinanceTrackerManager, device: DeviceInfo, unique_id: str,
                  translation_key: str, placeholders: dict[str, str] | None, icon: str,
                  value: Callable[[], Any], attrs: Callable[[], dict] | None, monetary: bool) -> None:
         self._manager = manager

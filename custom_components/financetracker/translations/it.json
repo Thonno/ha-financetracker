@@ -51,39 +51,39 @@
     }
   },
   "services": {
-    "aggiungi_movimento": {
+    "add_transaction": {
       "name": "Aggiungi movimento",
-      "description": "Registra un'entrata, un'uscita o un trasferimento nell'archivio dell'utente.",
+      "description": "Registra un'uscita, un'entrata o un trasferimento nell'archivio dell'utente.",
       "fields": {
-        "importo": {
+        "amount": {
           "name": "Importo",
           "description": "Importo in euro, sempre positivo."
         },
-        "tipo": {
+        "type": {
           "name": "Tipo",
-          "description": "uscita, entrata o trasferimento."
+          "description": "Uscita, entrata o trasferimento."
         },
-        "categoria": {
+        "category": {
           "name": "Categoria",
           "description": "Categoria del movimento."
         },
-        "descrizione": {
+        "description": {
           "name": "Descrizione",
           "description": "Descrizione libera."
         },
-        "conto": {
+        "account": {
           "name": "Conto",
-          "description": "Conto su cui avviene il movimento (vuoto = primo conto)."
+          "description": "Conto del movimento (vuoto = primo conto)."
         },
-        "conto_destinazione": {
+        "to_account": {
           "name": "Conto di destinazione",
           "description": "Solo per i trasferimenti."
         },
-        "metodo": {
+        "method": {
           "name": "Metodo di pagamento",
           "description": "Bancomat, carta, PayPal…"
         },
-        "data": {
+        "date": {
           "name": "Data",
           "description": "Vuoto = oggi."
         },
@@ -91,32 +91,41 @@
           "name": "Note",
           "description": "Note facoltative."
         },
-        "utente": {
+        "user": {
           "name": "Utente",
           "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
         }
       }
     },
-    "registra_spesa_fissa": {
+    "register_recurring_expense": {
       "name": "Registra spesa fissa",
       "description": "Registra la rata di una spesa fissa e sposta in avanti la scadenza.",
       "fields": {
-        "spesa": {
+        "expense": {
           "name": "Spesa fissa",
           "description": "Nome o id della spesa fissa."
         },
-        "importo": {
+        "amount": {
           "name": "Importo",
           "description": "Vuoto = importo previsto."
         },
-        "data": {
+        "date": {
           "name": "Data",
           "description": "Vuoto = data di scadenza."
         },
-        "utente": {
+        "user": {
           "name": "Utente",
           "description": "Solo nelle automazioni: nome dell'utente di Home Assistant. Vuoto = chi esegue l'azione."
         }
+      }
+    }
+  },
+  "selector": {
+    "transaction_type": {
+      "options": {
+        "expense": "Uscita",
+        "income": "Entrata",
+        "transfer": "Trasferimento"
       }
     }
   }

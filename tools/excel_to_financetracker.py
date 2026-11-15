@@ -1,7 +1,7 @@
-"""Converte il file Excel "Gestione Finanze Personali" nel file JSON da importare nel pannello Finanze.
+"""Converte un file Excel di finanze personali nel file JSON da importare nel pannello FinanceTracker.
 
 Uso:
-    python3 excel_to_finanze.py FILE.xlsx finanze_import.json [--principale CONTO --deposito CONTO]
+    python3 excel_to_financetracker.py FILE.xlsx financetracker_import.json [--principale CONTO --deposito CONTO]
 
 Regole di conversione:
 - "Uscita" con categoria "Prelievo" da un conto bancario       -> trasferimento verso "Contanti"
@@ -20,7 +20,7 @@ from datetime import date, datetime
 
 import openpyxl
 
-sys.path.insert(0, __file__.rsplit("/tools/", 1)[0] + "/custom_components/finanze")
+sys.path.insert(0, __file__.rsplit("/tools/", 1)[0] + "/custom_components/financetracker")
 from logic import add_months, past_end  # noqa: E402
 
 CADENZE = {"mensile": 1, "bimestrale": 2, "trimestrale": 3, "semestrale": 6, "annuale": 12}
@@ -135,7 +135,7 @@ def convert(path: str, today: date | None = None, principale: str | None = None,
         if m["category"] and m["category"] not in categories:
             categories.append(m["category"])
     return {
-        "format": "finanze",
+        "format": "financetracker",
         "version": 1,
         "accounts": accounts,
         "categories": categories,
