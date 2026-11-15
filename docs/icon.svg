@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbb04f"/><stop offset="1" stop-color="#e5762f"/>
+    </linearGradient>
+    <linearGradient id="flap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9621f"/><stop offset="1" stop-color="#a94e17"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe7a8"/><stop offset="1" stop-color="#ffc85c"/>
+    </linearGradient>
+  </defs>
+  <!-- back flap -->
+  <path d="M40 76 L172 34 a14 14 0 0 1 18 9 L200 76 Z" fill="url(#flap)"/>
+  <!-- wallet body -->
+  <rect x="20" y="70" width="216" height="158" rx="30" fill="url(#body)"/>
+  <!-- clasp -->
+  <rect x="150" y="118" width="98" height="62" rx="20" fill="#8a4414"/>
+  <rect x="150" y="118" width="98" height="62" rx="20" fill="none" stroke="#5c2b0b" stroke-width="3"/>
+  <circle cx="182" cy="149" r="13" fill="url(#coin)"/>
+  <!-- rising bars -->
+  <rect x="48" y="170" width="16" height="32" rx="5" fill="#fff" opacity=".92"/>
+  <rect x="76" y="148" width="16" height="54" rx="5" fill="#fff" opacity=".92"/>
+  <rect x="104" y="124" width="16" height="78" rx="5" fill="#fff" opacity=".92"/>
+</svg>

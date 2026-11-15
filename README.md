@@ -1,3 +1,10 @@
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/custom_components/financetracker/brand/dark_logo@2x.png">
+  <img alt="FinanceTracker" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/custom_components/financetracker/brand/logo@2x.png" height="96">
+</picture>
+</p>
+
 # FinanceTracker for Home Assistant
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thonno&repository=ha-financetracker&category=integration)
