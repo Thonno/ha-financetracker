@@ -85,6 +85,28 @@ header .who{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:va
 .ib svg{width:22px;height:22px;fill:currentColor}
 main{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 12px 120px;-webkit-overflow-scrolling:touch}
 .wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+@media(min-width:1000px){
+  main{padding:12px 24px 120px}
+  .wrap.cols{display:block;max-width:1280px;columns:2;column-gap:16px}
+  .wrap.cols>*{break-inside:avoid;margin-bottom:16px}
+  .wrap.cols>.span{column-span:all}
+  .wrap.wide{max-width:1100px}
+}
+@media(min-width:1600px){.wrap.cols{columns:3;max-width:1700px}}
+@media(max-height:520px) and (orientation:landscape){
+  header{padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:0}
+  header .who{display:none} header h1{font-size:18px}
+  .ib{width:36px;height:36px}
+  nav{bottom:calc(6px + env(safe-area-inset-bottom));padding:3px;max-width:520px}
+  nav button{flex-direction:row;justify-content:center;gap:6px;padding:7px 0}
+  nav button span{display:none} nav button.on span{display:inline}
+  main{padding:4px max(12px,env(safe-area-inset-left)) 70px max(12px,env(safe-area-inset-right))}
+  .fab{bottom:calc(60px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:16px}
+  .big{font-size:34px}
+  .wrap.cols{display:block;max-width:none;columns:2;column-gap:12px}
+  .wrap.cols>*{break-inside:avoid;margin-bottom:12px}
+  .wrap.cols>.span{column-span:all}
+}
 nav{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;gap:2px;padding:5px;z-index:3;
   background:rgb(22,26,35);border:var(--bd);border-radius:24px;box-shadow:0 10px 26px rgba(0,0,0,.45);max-width:640px;margin:0 auto}
 nav button{flex:1;background:none;border:0;color:rgba(255,255,255,.62);padding:7px 0 6px;font:inherit;font-size:10.5px;font-weight:700;
@@ -306,7 +328,8 @@ class FinanzePanel extends HTMLElement {
     const keepScroll = this._keepScroll;
     this._keepScroll = false;
     const fn = { home: this._home, movimenti: this._movimenti, report: this._report, fisse: this._fisse, impostazioni: this._settings }[this.view];
-    this.$main.innerHTML = `<div class="wrap">${fn.call(this)}</div>`;
+    const layout = this.view === "movimenti" ? "wrap wide" : "wrap cols";
+    this.$main.innerHTML = `<div class="${layout}">${fn.call(this)}</div>`;
     this.$fab.innerHTML = ["home", "movimenti"].includes(this.view) ? `<button class="fab" data-a="add" aria-label="Aggiungi">${svg(ICON.plus)}</button>` : "";
     if (keepScroll) this.$main.scrollTop = top;
   }
@@ -470,7 +493,7 @@ class FinanzePanel extends HTMLElement {
     const series = months.map((k) => ({ k, ...totals(this._monthMovs(k)) }));
     const saving = t.entrate ? Math.round((t.netto / t.entrate) * 100) : null;
     return `
-      <div class="card" style="padding:12px">
+      <div class="card span" style="padding:12px">
         <div class="seg"><button class="${r.mode === "mese" ? "on" : ""}" data-a="r-mode" data-v="mese">Mese</button>
           <button class="${r.mode === "anno" ? "on" : ""}" data-a="r-mode" data-v="anno">Anno</button></div>
         <div class="mbar" style="margin-top:8px"><button class="ib" data-a="r-prev">${svg(ICON.left)}</button><b>${label}</b>
@@ -557,7 +580,7 @@ class FinanzePanel extends HTMLElement {
         <div class="sec">Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.</div></div>
       ${listEd("categories", "category", "Categorie")}
       ${listEd("methods", "method", "Metodi di pagamento")}
-      <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn flat" data-a="s-reset">Annulla modifiche</button><button class="btn" data-a="s-save">Salva impostazioni</button></div>
+      <div class="row span" style="justify-content:flex-end;gap:8px"><button class="btn flat" data-a="s-reset">Annulla modifiche</button><button class="btn" data-a="s-save">Salva impostazioni</button></div>
       <div class="card">${hd("mdi:database-outline", "Dati", "Import, export e backup")}
         <div class="sec" style="margin-bottom:10px">I dati sono salvati in Home Assistant (cartella <code>.storage</code>) e inclusi nei backup.</div>
         <div class="chips"><button class="chip" data-a="export-json">Esporta backup (JSON)</button><button class="chip" data-a="export-csv">Esporta movimenti (CSV)</button>
