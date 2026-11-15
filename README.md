@@ -7,6 +7,20 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 > **Languages:** English and Italian. The panel, the entity names, the notifications and the starter categories follow the language set in Home Assistant (any other language falls back to English). More translations are welcome – see [Contributing](#contributing).
 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/light.png">
+  <img alt="FinanceTracker panel on a phone: home, transactions, reports, recurring expenses and the add-transaction sheet" src="docs/screenshots/dark.png">
+</picture>
+
+<details>
+<summary>Light theme</summary>
+
+![FinanceTracker panel in the light theme](docs/screenshots/light.png)
+
+</details>
+
+*Screenshots use made-up demo data.*
+
 ## Features
 
 - **Sidebar panel built for phones**: a card-based layout with bottom tab navigation that adapts to phones, tablets and desktops. It works in the Companion app and in any browser.
