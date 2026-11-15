@@ -204,7 +204,3 @@ def money(value: float, currency: str = "EUR", lang: str = "it") -> str:
         return f"{text} {sym}"
     text = f"{value:,.2f}"
     return f"{sym}{text}" if len(sym) <= 2 or sym.endswith("$") else f"{sym} {text}"
-
-
-def _services(manager: FinanceTrackerManager) -> list[str]:
-    return [s.removeprefix("notify.") for s in manager.settings.get("notify_services", [])]

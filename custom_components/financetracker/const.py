@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 DOMAIN = "financetracker"
-VERSION = "2.3.0"
+VERSION = "2.3.1"
 
 STORAGE_KEY = "financetracker.user_{}"
 INDEX_KEY = "financetracker.users"

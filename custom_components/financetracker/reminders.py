@@ -20,6 +20,10 @@ from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerR
 _LOGGER = logging.getLogger(__name__)
 
 
+def _services(manager: FinanceTrackerManager) -> list[str]:
+    return [s.removeprefix("notify.") for s in manager.settings.get("notify_services", [])]
+
+
 class Reminders:
     """Controlla ogni giorno le scadenze e gestisce le risposte dalle notifiche."""
 
