@@ -169,11 +169,13 @@ class FinanceTrackerManager:
         await self._commit()
 
     async def save_prefs(self, notify_services: list[str] | None = None,
-                         sensors: bool | None = None) -> dict:
+                         sensors: bool | None = None, theme: str | None = None) -> dict:
         if notify_services is not None:
             self.settings["notify_services"] = [str(s) for s in notify_services]
         if sensors is not None:
             self.settings["sensors"] = bool(sensors)
+        if theme in ("auto", "light", "dark"):
+            self.settings["theme"] = theme
         await self._commit()
         return self.settings
 

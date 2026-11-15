@@ -115,7 +115,7 @@ async def _export(m: FinanceTrackerManager, msg: dict, user: str):
 
 
 async def _prefs(m: FinanceTrackerManager, msg: dict, user: str):
-    return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"))
+    return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"), msg.get("theme"))
 
 
 async def _targets(m: FinanceTrackerManager, msg: dict, user: str):
@@ -154,6 +154,7 @@ def async_register(hass: HomeAssistant) -> None:
         ("financetracker/prefs/save", {
             vol.Optional("notify_services"): [str],
             vol.Optional("sensors"): bool,
+            vol.Optional("theme"): vol.In(["auto", "light", "dark"]),
         }, _prefs),
         ("financetracker/notify_targets", {}, _targets),
     ]

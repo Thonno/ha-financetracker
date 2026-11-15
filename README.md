@@ -9,7 +9,8 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 ## Features
 
-- **Sidebar panel built for phones**: a dark, card-based layout with bottom tab navigation. It works in the Companion app and in any browser.
+- **Sidebar panel built for phones**: a card-based layout with bottom tab navigation that adapts to phones, tablets and desktops. It works in the Companion app and in any browser.
+- **Light, dark or automatic theme**: automatic follows your Home Assistant theme; the choice is saved per user and follows you across devices.
 - **Fast entry**: type the amount, then tap a category; your most-used categories are shown first. Tapping a past description fills in its category, account and payment method.
 - **Accounts and transfers**: track several accounts (current account, savings, cash, PayPal…), each with an opening balance. Transfers between accounts (ATM withdrawals, moving money to savings) change balances but don't count as income or expenses.
 - **Transactions**: browse by month, search, and filter by type, category and account. Edit or delete any entry.
