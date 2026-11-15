@@ -7,10 +7,12 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 > **Languages:** English and Italian. The panel, the entity names, the notifications and the starter categories follow the language set in Home Assistant (any other language falls back to English). More translations are welcome – see [Contributing](#contributing).
 
+<a href="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark.png">
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light.png">
   <img alt="FinanceTracker panel on a phone: home, transactions, reports, recurring expenses and the add-transaction sheet" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark.png">
 </picture>
+</a>
 
 <details>
 <summary>Light theme</summary>
