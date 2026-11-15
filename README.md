@@ -14,17 +14,31 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 > **Languages:** English and Italian. The panel, the entity names, the notifications and the starter categories follow the language set in Home Assistant (any other language falls back to English). More translations are welcome – see [Contributing](#contributing).
 
-<a href="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark.png">
+**Phone**
+
+<a href="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_phone.png">
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light.png">
-  <img alt="FinanceTracker panel on a phone: home, transactions, reports, recurring expenses and the add-transaction sheet" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light_phone.png">
+  <img alt="FinanceTracker on a phone: home, transactions, reports, recurring expenses and the add-transaction sheet" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_phone.png">
+</picture>
+</a>
+
+**Tablet and desktop**
+
+<a href="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_desktop.png">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light_desktop.png">
+  <img alt="FinanceTracker on a tablet or desktop in landscape: two-column home view" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_desktop.png">
 </picture>
 </a>
 
 <details>
-<summary>Light theme</summary>
+<summary>All screenshots (light and dark)</summary>
 
-![FinanceTracker panel in the light theme](https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light.png)
+![Phone, light theme](https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light_phone.png)
+![Desktop, light theme](https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/light_desktop.png)
+![Phone, dark theme](https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_phone.png)
+![Desktop, dark theme](https://raw.githubusercontent.com/Thonno/ha-financetracker/main/docs/screenshots/dark_desktop.png)
 
 </details>
 
