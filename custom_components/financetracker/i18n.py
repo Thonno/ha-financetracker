@@ -40,6 +40,9 @@ MESSAGES: dict[str, dict[str, str]] = {
     "notify_register": {"it": "Registra", "en": "Register"},
     "notify_skip": {"it": "Salta", "en": "Skip"},
     "automation": {"it": "Automazione", "en": "Automation"},
+    "interest_category": {"it": "Interessi", "en": "Interest"},
+    "interest_desc": {"it": "Interessi maturati", "en": "Interest earned"},
+    "interest_note": {"it": "Automatico · lordo {gross} · ritenuta {tax}%", "en": "Automatic · gross {gross} · tax {tax}%"},
     "bad_currency": {"it": "Valuta non valida: {code} (usa un codice ISO di 3 lettere, es. EUR)",
                      "en": "Invalid currency: {code} (use a 3-letter ISO code, e.g. EUR)"},
 }

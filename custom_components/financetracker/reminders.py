@@ -12,29 +12,12 @@ from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later, async_track_time_change
 
 from . import logic
+from .logic import money
 from .i18n import language, tr
 from .const import ACTION_REGISTER, ACTION_SKIP, PANEL_URL
 from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerRegistry
 
 _LOGGER = logging.getLogger(__name__)
-
-
-SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CNY": "¥", "INR": "₹", "KRW": "₩",
-           "BRL": "R$", "CAD": "CA$", "AUD": "A$", "NZD": "NZ$", "MXN": "MX$", "ILS": "₪", "TRY": "₺"}
-
-
-def money(value: float, currency: str = "EUR", lang: str = "it") -> str:
-    """Importo con la valuta, nel formato della lingua (12,50 € / €12.50 / 12,50 CHF)."""
-    sym = SYMBOLS.get(currency, currency)
-    if lang == "it":
-        text = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        return f"{text} {sym}"
-    text = f"{value:,.2f}"
-    return f"{sym}{text}" if len(sym) <= 2 or sym.endswith("$") else f"{sym} {text}"
-
-
-def _services(manager: FinanceTrackerManager) -> list[str]:
-    return [s.removeprefix("notify.") for s in manager.settings.get("notify_services", [])]
 
 
 class Reminders:
@@ -53,11 +36,21 @@ class Reminders:
         self._unsubs.append(self.hass.bus.async_listen(
             "mobile_app_notification_action", self._on_action))
         self._unsubs.append(async_call_later(self.hass, 60, self._tick))
+        # interessi: ogni notte e subito all'avvio (recupera i giorni persi)
+        self._unsubs.append(async_track_time_change(self.hass, self._interest, hour=0, minute=5, second=0))
+        self._unsubs.append(async_call_later(self.hass, 20, self._interest))
 
     @callback
     def stop(self) -> None:
         while self._unsubs:
             self._unsubs.pop()()
+
+    async def _interest(self, _now=None) -> None:
+        for manager in list(self.registry.managers.values()):
+            try:
+                manager.accrue_interest()
+            except Exception:  # noqa: BLE001 - un archivio con problemi non blocca gli altri
+                _LOGGER.exception("Calcolo interessi non riuscito per %s", manager.user_name)
 
     async def _tick(self, _now=None) -> None:
         for manager in list(self.registry.managers.values()):

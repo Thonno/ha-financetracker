@@ -160,3 +160,51 @@ def movement_from_recurring(item: dict, on: date) -> dict:
         "note": "",
         "recurring_id": item.get("id"),
     }
+
+
+# ---------------------------------------------------------------- interessi
+def clean_tiers(tiers: Iterable[dict]) -> list[dict]:
+    """Scaglioni ordinati: [{"up_to": 3000, "rate": 2.5}, {"up_to": None, "rate": 1.0}]."""
+    out = []
+    for t in tiers or []:
+        rate = float(t.get("rate") or 0)
+        cap = t.get("up_to")
+        cap = None if cap in (None, "", 0) else float(cap)
+        out.append({"up_to": cap, "rate": rate})
+    capped = sorted([t for t in out if t["up_to"] is not None], key=lambda t: t["up_to"])
+    open_ended = [t for t in out if t["up_to"] is None][:1]
+    return capped + open_ended
+
+
+def daily_interest(balance: float, tiers: Iterable[dict], days_in_year: int = 365) -> float:
+    """Interesse lordo di un giorno sul saldo, applicando ogni tasso alla sua fascia."""
+    if balance <= 0:
+        return 0.0
+    total, prev, remaining = 0.0, 0.0, float(balance)
+    for t in clean_tiers(tiers):
+        portion = remaining if t["up_to"] is None else min(remaining, max(t["up_to"] - prev, 0))
+        total += portion * t["rate"] / 100 / days_in_year
+        remaining -= portion
+        if t["up_to"] is not None:
+            prev = t["up_to"]
+        if remaining <= 0:
+            break
+    return total
+
+
+SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥", "CNY": "¥", "INR": "₹", "KRW": "₩",
+           "BRL": "R$", "CAD": "CA$", "AUD": "A$", "NZD": "NZ$", "MXN": "MX$", "ILS": "₪", "TRY": "₺"}
+
+
+def money(value: float, currency: str = "EUR", lang: str = "it") -> str:
+    """Importo con la valuta, nel formato della lingua (12,50 € / €12.50 / 12,50 CHF)."""
+    sym = SYMBOLS.get(currency, currency)
+    if lang == "it":
+        text = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"{text} {sym}"
+    text = f"{value:,.2f}"
+    return f"{sym}{text}" if len(sym) <= 2 or sym.endswith("$") else f"{sym} {text}"
+
+
+def _services(manager: FinanceTrackerManager) -> list[str]:
+    return [s.removeprefix("notify.") for s in manager.settings.get("notify_services", [])]

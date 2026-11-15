@@ -69,6 +69,16 @@ const EN = {
   "Aspetto": "Appearance", "Tema del pannello": "Panel theme", "Automatico": "Automatic", "Chiaro": "Light", "Scuro": "Dark",
   "Automatico segue il tema di Home Assistant. La scelta vale su tutti i tuoi dispositivi.":
     "Automatic follows the Home Assistant theme. Your choice applies on all your devices.",
+  "Interessi · {0}": "Interest · {0}", "Calcola gli interessi": "Calculate interest",
+  "Registra ogni giorno un'entrata «Interessi» calcolata sul saldo di fine giornata.":
+    "Records an “Interest” income every day, based on the end-of-day balance.",
+  "Scaglioni": "Tiers", "Fino a ({0})": "Up to ({0})", "Tasso annuo %": "Annual rate %", "oltre": "no limit",
+  "Aggiungi scaglione": "Add tier", "Ritenuta fiscale %": "Tax withheld %", "Calcola dal giorno": "Calculate from",
+  "Con il saldo attuale ({0}): {1} netti al giorno, circa {2} al mese e {3} all'anno (lordo {4}).":
+    "With the current balance ({0}): {1} net per day, about {2} per month and {3} per year ({4} gross).",
+  "Gli interessi dei giorni già passati dalla data scelta vengono registrati subito; poi ogni notte quelli del giorno prima. Se modifichi movimenti passati, gli interessi già registrati non vengono ricalcolati.":
+    "Interest for days already past since the chosen date is recorded right away, then every night for the previous day. Editing past transactions does not recalculate interest already recorded.",
+  "Interessi salvati": "Interest settings saved", "Interessi": "Interest", "{0}/giorno": "{0}/day", "Salva il conto prima di impostare gli interessi": "Save the account before setting interest",
   "Valuta": "Currency", "Valuta degli importi": "Currency of your amounts", "Come Home Assistant ({0})": "Same as Home Assistant ({0})",
   "La valuta di Home Assistant si imposta in Impostazioni → Sistema → Informazioni sulla casa. Cambiare valuta non converte gli importi già registrati.":
     "Home Assistant's currency is set in Settings → System → Home information. Changing currency does not convert amounts already recorded.",
@@ -176,6 +186,22 @@ function groupSum(list, key) {
   }
   return [...out.values()].sort((a, b) => b.total - a.total);
 }
+function dailyInterest(balance, tiers) {
+  if (!(balance > 0)) return 0;
+  const list = (tiers || []).map((t) => ({ up_to: t.up_to === null || t.up_to === "" || t.up_to === undefined ? null : num(t.up_to), rate: num(t.rate) || 0 }))
+    .filter((t) => t.rate > 0 && (t.up_to === null || t.up_to > 0));
+  const capped = list.filter((t) => t.up_to !== null).sort((a, b) => a.up_to - b.up_to);
+  const open = list.filter((t) => t.up_to === null).slice(0, 1);
+  let total = 0, prev = 0, rest = balance;
+  for (const t of [...capped, ...open]) {
+    const part = t.up_to === null ? rest : Math.min(rest, Math.max(t.up_to - prev, 0));
+    total += (part * t.rate) / 100 / 365; rest -= part;
+    if (t.up_to !== null) prev = t.up_to;
+    if (rest <= 0) break;
+  }
+  return total;
+}
+const rateLabel = (tiers) => (tiers || []).map((t) => `${String(t.rate).replace(".", DEC)}%`).join(" / ");
 const pastEnd = (due, end) => !!(due && end && String(due).slice(0, 7) > String(end).slice(0, 7));
 const recActive = (r) => r.active !== false && !pastEnd(r.next_due, r.end_date);
 
@@ -334,6 +360,9 @@ td:first-child,th:first-child{text-align:left}
 th{font-weight:700;color:var(--t2);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
 .ed{display:grid;grid-template-columns:1fr 110px 42px;gap:6px;align-items:center;margin-bottom:6px}
 .ed.two{grid-template-columns:1fr 42px}
+.ed.acc{grid-template-columns:1fr 96px 42px 42px}
+.tiers{display:grid;grid-template-columns:1fr 1fr 42px;gap:6px;align-items:end}
+.tiers input{padding:9px 11px}
 .ed input{padding:9px 11px}
 .danger{color:var(--out)}
 .loading{display:grid;place-items:center;height:60vh;color:var(--t2)}
@@ -366,7 +395,7 @@ const CAT_ICON = {
   subscriptions: "mdi:television-play", restaurants: "mdi:silverware-fork-knife", takeaway: "mdi:moped-outline", pets: "mdi:paw",
   leisure: "mdi:party-popper", salary: "mdi:cash-plus", loan: "mdi:credit-card-clock-outline", fuel: "mdi:gas-station-outline",
   pharmacy: "mdi:pill", phone: "mdi:cellphone", savings: "mdi:piggy-bank-outline", withdrawal: "mdi:cash",
-  shopping: "mdi:shopping-outline", other: "mdi:dots-horizontal-circle-outline", transfer: "mdi:swap-horizontal",
+  shopping: "mdi:shopping-outline", interessi: "mdi:percent-circle-outline", interest: "mdi:percent-circle-outline", other: "mdi:dots-horizontal-circle-outline", transfer: "mdi:swap-horizontal",
 };
 const FIXED_RE = /^(mutuo|finanziament|abbonament|mortgage|loan|subscription)/i;
 const catIcon = (c) => CAT_ICON[String(c || "").toLowerCase()] || "mdi:tag-outline";
@@ -560,7 +589,11 @@ class FinanceTrackerPanel extends HTMLElement {
     return `
       <div class="card hero"><div class="row"><ha-icon icon="mdi:wallet-outline" style="color:var(--acc);--mdc-icon-size:22px"></ha-icon><span class="lbl">${t("Saldo attuale")}</span></div>
         <div class="big">${eur(total)}</div>
-        <div class="tiles">${accs.map((a) => tile(esc(a.name), eur(bal[a.name] || 0), (bal[a.name] || 0) < 0 ? "out" : "", "", /^(contanti|cash)$/i.test(a.name) ? "mdi:cash" : "mdi:bank-outline")).join("")}</div></div>
+        <div class="tiles">${accs.map((a) => {
+          const it = a.interest?.enabled ? a.interest : null;
+          const sub = it ? `${rateLabel(it.tiers)} · +${t("{0}/giorno", eur(dailyInterest(bal[a.name] || 0, it.tiers) * (1 - (it.tax || 0) / 100)))}` : "";
+          return tile(esc(a.name), eur(bal[a.name] || 0), (bal[a.name] || 0) < 0 ? "out" : "", sub, it ? "mdi:percent-circle-outline" : /^(contanti|cash)$/i.test(a.name) ? "mdi:cash" : "mdi:bank-outline");
+        }).join("")}</div></div>
       ${due.length ? `<div class="card due">${hd("mdi:bell-ring-outline", t("Spese fisse da registrare"), due.length === 1 ? t("1 scadenza") : t("{0} scadenze", due.length))}${this._dueRows(due, today)}</div>` : ""}
       <div class="card">${hd("mdi:calendar-month-outline", ymLabel(k), t("{0} operazioni", tt.n))}
         <div class="kpi">${tile(t("Entrate"), eur(tt.entrate), "in")}${tile(t("Uscite"), eur(tt.uscite), "out")}${tile(t("Netto"), eur(tt.netto), tt.netto < 0 ? "out" : "in")}</div>
@@ -722,9 +755,11 @@ class FinanceTrackerPanel extends HTMLElement {
         <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="${key}" data-i="${i}" ${n ? `disabled title="${t("Usata in {0} movimenti", n)}"` : ""} aria-label="${t("Elimina")}">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}</div>`;
     return `
       <div class="card">${hd("mdi:bank-outline", t("Conti"), t("Nome e saldo iniziale"), `<button class="pill" data-a="s-add" data-k="accounts"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi")}</button>`)}
-        <div class="ed sec" style="font-size:12px"><span>${t("Nome")}</span><span>${t("Saldo iniziale")}</span><span></span></div>
-        ${s.accounts.map((a, i) => { const n = a.orig ? used("account", a.orig) : 0; return `<div class="ed"><input data-s="accounts" data-i="${i}" data-p="name" value="${esc(a.name)}" placeholder="${t("Nome conto")}">
+        <div class="ed acc sec" style="font-size:12px"><span>${t("Nome")}</span><span>${t("Saldo iniziale")}</span><span></span><span></span></div>
+        ${s.accounts.map((a, i) => { const n = a.orig ? used("account", a.orig) : 0; return `<div class="ed acc"><input data-s="accounts" data-i="${i}" data-p="name" value="${esc(a.name)}" placeholder="${t("Nome conto")}">
           <input data-s="accounts" data-i="${i}" data-p="initial_balance" inputmode="decimal" value="${esc(String(Number(a.initial_balance ?? 0)).replace(".", DEC))}">
+          <button class="ib" data-a="int-edit" data-k="${esc(a.orig || "")}" aria-label="${t("Interessi")}" title="${t("Interessi")}"
+            style="${d.accounts.find((x) => x.name === a.orig)?.interest?.enabled ? "background:var(--accbg);border:var(--accbd);color:var(--acct)" : ""}"><ha-icon icon="mdi:percent"></ha-icon></button>
           <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="accounts" data-i="${i}" ${n ? "disabled" : ""} aria-label="${t("Elimina")}">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}
         <div class="sec">${t("Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.")}</div></div>
       ${listEd("categories", "category", t("Categorie"))}
@@ -785,10 +820,53 @@ class FinanceTrackerPanel extends HTMLElement {
   }
   _closeSheet() { this.sheet = null; this.$layer.innerHTML = ""; }
 
+  _openInterest(name) {
+    const acc = this.data.accounts.find((a) => a.name === name);
+    if (!acc) { this.toast(t("Salva il conto prima di impostare gli interessi")); return; }
+    const it = acc.interest || {};
+    this.sheet = {
+      kind: "int", account: name,
+      draft: {
+        enabled: it.tiers ? !!it.enabled : true,
+        tiers: (it.tiers?.length ? it.tiers : [{ up_to: null, rate: "" }]).map((x) => ({
+          up_to: x.up_to === null || x.up_to === undefined ? "" : String(x.up_to).replace(".", DEC),
+          rate: x.rate === "" ? "" : String(x.rate).replace(".", DEC) })),
+        tax: String(it.tax ?? (LANG === "it" ? 26 : 0)).replace(".", DEC),
+        start_date: it.start_date || this.data.today,
+      },
+    };
+    this._renderSheet(true);
+  }
+  _intPreview() {
+    const d = this.sheet.draft, bal = balances(this.data)[this.sheet.account] || 0;
+    const gross = dailyInterest(bal, d.tiers), net = gross * (1 - (num(d.tax) || 0) / 100);
+    return t("Con il saldo attuale ({0}): {1} netti al giorno, circa {2} al mese e {3} all'anno (lordo {4}).",
+      eur(bal), eur(net), eur(net * 30.42), eur(net * 365), eur(gross * 365));
+  }
+  _intForm(s) {
+    const d = s.draft;
+    return `<div class="hd"><div class="ico"><ha-icon icon="mdi:percent-circle-outline"></ha-icon></div><h3>${t("Interessi · {0}", esc(s.account))}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
+      <div class="bd">
+        <div class="row"><div class="grow"><b>${t("Calcola gli interessi")}</b><div class="sec">${t("Registra ogni giorno un'entrata «Interessi» calcolata sul saldo di fine giornata.")}</div></div>
+          <button class="sw ${d.enabled ? "on" : ""}" data-a="i-toggle" aria-label="${t("Calcola gli interessi")}"></button></div>
+        <div><div class="lbl" style="margin-bottom:6px">${t("Scaglioni")}</div>
+          ${d.tiers.map((x, i) => `<div class="tiers" style="margin-bottom:6px">
+            <label class="f">${i === 0 ? t("Fino a ({0})", SYM) : "&nbsp;"}<input data-it="${i}" data-p="up_to" inputmode="decimal" value="${esc(x.up_to)}" placeholder="${t("oltre")}"></label>
+            <label class="f">${i === 0 ? t("Tasso annuo %") : "&nbsp;"}<input data-it="${i}" data-p="rate" inputmode="decimal" value="${esc(x.rate)}" placeholder="2${DEC}5"></label>
+            <button class="ib danger" data-a="i-del" data-i="${i}" ${d.tiers.length < 2 ? "disabled" : ""} aria-label="${t("Elimina")}">${svg(ICON.del)}</button></div>`).join("")}
+          <button class="pill" data-a="i-add"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi scaglione")}</button></div>
+        <div class="g2"><label class="f">${t("Ritenuta fiscale %")}<input data-d="tax" inputmode="decimal" value="${esc(d.tax)}"></label>
+          <label class="f">${t("Calcola dal giorno")}<input type="date" data-d="start_date" value="${esc(d.start_date)}"></label></div>
+        <div class="duerow sec" id="ipreview">${this._intPreview()}</div>
+        <div class="sec">${t("Gli interessi dei giorni già passati dalla data scelta vengono registrati subito; poi ogni notte quelli del giorno prima. Se modifichi movimenti passati, gli interessi già registrati non vengono ricalcolati.")}</div>
+      </div>
+      <div class="ft"><button class="btn" data-a="i-save">${t("Salva")}</button></div>`;
+  }
+
   _renderSheet(focus = false) {
     const s = this.sheet;
     if (!s) return;
-    const body = s.kind === "mov" ? this._movForm(s) : this._recForm(s);
+    const body = s.kind === "mov" ? this._movForm(s) : s.kind === "int" ? this._intForm(s) : this._recForm(s);
     const open = this.$layer.querySelector(".sheet");
     if (open && !focus) {
       const bd = open.querySelector(".bd"), top = bd ? bd.scrollTop : 0;
@@ -950,6 +1028,18 @@ class FinanceTrackerPanel extends HTMLElement {
           const dev = v.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " ");
           this.toast(t(cur.has(v) ? "Notifiche attive su {0}" : "Notifiche disattivate su {0}", dev)); break;
         }
+        case "int-edit": this._openInterest(el.dataset.k); break;
+        case "i-toggle": s.draft.enabled = !s.draft.enabled; this._renderSheet(); break;
+        case "i-add": s.draft.tiers.push({ up_to: "", rate: "" }); this._renderSheet(); break;
+        case "i-del": s.draft.tiers.splice(Number(el.dataset.i), 1); this._renderSheet(); break;
+        case "i-save": {
+          const d = s.draft;
+          const tiers = d.tiers.map((x) => ({ up_to: String(x.up_to).trim() === "" ? null : num(x.up_to), rate: num(x.rate) }))
+            .filter((x) => x.rate > 0);
+          await this.ws("financetracker/account/interest", { account: s.account, interest: {
+            enabled: d.enabled && tiers.length > 0, tiers, tax: num(d.tax) || 0, start_date: d.start_date || this.data.today } });
+          this._closeSheet(); this.toast(t("Interessi salvati")); break;
+        }
         case "p-theme": {
           this._themePref = v; this._applyTheme(); this._keepScroll = true; this._renderMain();
           await this.ws("financetracker/prefs/save", { theme: v }); break;
@@ -976,9 +1066,13 @@ class FinanceTrackerPanel extends HTMLElement {
       this.f.search = t.value;
       const box = this.shadowRoot.getElementById("mlist");
       if (box) box.innerHTML = this._movList();
+    } else if (t.dataset.it !== undefined && this.sheet?.kind === "int") {
+      this.sheet.draft.tiers[Number(t.dataset.it)][t.dataset.p] = t.value;
+      const pv = this.$layer.querySelector("#ipreview"); if (pv) pv.textContent = this._intPreview();
     } else if (t.dataset.d && this.sheet) {
       this.sheet.draft[t.dataset.d] = t.type === "checkbox" ? t.checked : t.value;
       if (t.dataset.d === "description" && this.sheet.kind === "mov") this._refreshSugg();
+      if (this.sheet.kind === "int") { const pv = this.$layer.querySelector("#ipreview"); if (pv) pv.textContent = this._intPreview(); }
     } else if (t.dataset.s) {
       const row = this.settingsDraft[t.dataset.s][Number(t.dataset.i)];
       row[t.dataset.p] = t.value;

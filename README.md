@@ -16,6 +16,7 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 - **Accounts and transfers**: track several accounts (current account, savings, cash, PayPal…), each with an opening balance. Transfers between accounts (ATM withdrawals, moving money to savings) change balances but don't count as income or expenses.
 - **Transactions**: browse by month, search, and filter by type, category and account. Edit or delete any entry.
 - **Reports** by month or year: income vs. expenses over time, spending by category, by payment method and by account, and a dedicated total for mortgage, loans and subscriptions.
+- **Interest on savings accounts**: set tiered annual rates per account (e.g. 2.5% up to €3,000, 1% above) and an optional tax withholding; interest is calculated on the end-of-day balance and recorded automatically every day as income.
 - **Recurring expenses**: monthly, bimonthly, quarterly, half-yearly or yearly, with an optional last-instalment date. When one is due you get an actionable notification with **Register** / **Skip** buttons; answering on one device clears it everywhere.
 - **One private archive per Home Assistant user**: each person who opens the panel sees only their own data (see [Privacy](#privacy-and-multi-user-behaviour)).
 - **Optional sensors** for dashboards and automations, enabled per user.

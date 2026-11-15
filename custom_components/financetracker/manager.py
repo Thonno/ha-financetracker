@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import copy
+import math
 import re
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -14,7 +15,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from . import logic
-from .i18n import defaults, tr
+from .i18n import defaults, language, tr
 from .const import DEFAULT_DATA, INDEX_KEY, SIGNAL_ANY, SIGNAL_UPDATED, STORAGE_KEY, STORAGE_VERSION
 
 MOVEMENT_FIELDS = (
@@ -164,12 +165,19 @@ class FinanceTrackerManager:
             r["account"] = ren_acc.get(r.get("account", ""), r.get("account", ""))
             r["category"] = ren_cat.get(r.get("category", ""), r.get("category", ""))
             r["method"] = ren_met.get(r.get("method", ""), r.get("method", ""))
-        self.data["accounts"] = [
-            {"name": str(a["name"]).strip(),
-             "initial_balance": round(float(a.get("initial_balance") or 0), 2),
-             "hidden": bool(a.get("hidden", False))}
-            for a in accounts
-        ]
+        old = {a["name"]: a for a in self.data["accounts"]}
+        back = {new: orig for orig, new in ren_acc.items()}
+        new_accounts = []
+        for a in accounts:
+            name = str(a["name"]).strip()
+            acc = {"name": name,
+                   "initial_balance": round(float(a.get("initial_balance") or 0), 2),
+                   "hidden": bool(a.get("hidden", False))}
+            prev = old.get(back.get(name, name))
+            if prev and prev.get("interest"):  # gli interessi seguono il conto anche se rinominato
+                acc["interest"] = prev["interest"]
+            new_accounts.append(acc)
+        self.data["accounts"] = new_accounts
         self.data["categories"] = [c.strip() for c in categories if str(c).strip()]
         self.data["methods"] = [c.strip() for c in methods if str(c).strip()]
         await self._commit()
@@ -190,6 +198,66 @@ class FinanceTrackerManager:
             self.settings["currency"] = code or None
         await self._commit()
         return self.settings
+
+    # ---------------------------------------------------------------- interessi
+    async def set_interest(self, account: str, raw: dict) -> dict:
+        acc = next((a for a in self.data["accounts"] if a["name"] == account), None)
+        if acc is None:
+            raise FinanceTrackerError(tr(self.hass, "unknown_account", account=account))
+        prev = acc.get("interest") or {}
+        tiers = [t for t in logic.clean_tiers(raw.get("tiers", [])) if t["rate"] > 0]
+        tax = min(max(float(raw.get("tax") or 0), 0), 100)
+        start = logic.parse_date(raw.get("start_date") or self.today())
+        cfg = {"enabled": bool(raw.get("enabled")) and bool(tiers), "tiers": tiers, "tax": tax,
+               "start_date": start.isoformat()}
+        same_start = prev.get("start_date") == cfg["start_date"] and prev.get("enabled")
+        # si riparte dal giorno indicato solo se cambia la data o se si riattiva
+        cfg["last_accrued"] = prev.get("last_accrued") if same_start else (start - timedelta(days=1)).isoformat()
+        cfg["carry"] = prev.get("carry", 0.0) if same_start else 0.0
+        acc["interest"] = cfg
+        self.accrue_interest(commit=False)
+        await self._commit()
+        return cfg
+
+    def accrue_interest(self, commit: bool = True) -> int:
+        """Registra gli interessi netti di ogni giorno concluso (fino a ieri). Ritorna i movimenti creati."""
+        today = self.today()
+        created = 0
+        category = tr(self.hass, "interest_category")
+        for acc in self.data["accounts"]:
+            cfg = acc.get("interest") or {}
+            if not cfg.get("enabled") or not cfg.get("tiers"):
+                continue
+            day = logic.parse_date(cfg["last_accrued"]) + timedelta(days=1)
+            day = max(day, today - timedelta(days=3650))
+            carry = float(cfg.get("carry") or 0)
+            keep = 1 - float(cfg.get("tax") or 0) / 100
+            while day < today:
+                balance = logic.account_balances(self.data, until=day).get(acc["name"], 0)
+                carry += logic.daily_interest(balance, cfg["tiers"]) * keep
+                amount = math.floor(carry * 100 + 1e-9) / 100  # come le banche: centesimi per difetto
+                if amount >= 0.01:
+                    carry -= amount
+                    gross = amount / keep if keep > 0 else amount
+                    self.data["movements"].append({
+                        "id": _new_id(), "date": day.isoformat(), "type": logic.TIPO_ENTRATA,
+                        "amount": round(amount, 2), "category": category,
+                        "description": tr(self.hass, "interest_desc"), "method": "", "account": acc["name"],
+                        "to_account": "", "note": tr(self.hass, "interest_note",
+                                                     gross=logic.money(gross, self.currency, language(self.hass)),
+                                                     tax=f"{cfg.get('tax') or 0:g}"),
+                        "created_by": "FinanceTracker", "created_at": dt_util.utcnow().isoformat(),
+                        "auto": "interest",
+                    })
+                    created += 1
+                cfg["last_accrued"] = day.isoformat()
+                day += timedelta(days=1)
+            cfg["carry"] = round(carry, 6)
+        if created and category not in self.data["categories"]:
+            self.data["categories"].append(category)
+        if commit and created:
+            self.hass.async_create_task(self._commit())
+        return created
 
     # ---------------------------------------------------------------- recurring
     async def save_recurring(self, raw: dict) -> dict:

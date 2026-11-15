@@ -115,6 +115,10 @@ async def _export(m: FinanceTrackerManager, msg: dict, user: str):
     return m.export_data()
 
 
+async def _interest(m: FinanceTrackerManager, msg: dict, user: str):
+    return await m.set_interest(msg["account"], msg["interest"])
+
+
 async def _prefs(m: FinanceTrackerManager, msg: dict, user: str):
     return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"), msg.get("theme"),
                               msg["currency"] if "currency" in msg else False)
@@ -160,6 +164,10 @@ def async_register(hass: HomeAssistant) -> None:
             vol.Optional("currency"): vol.Any(None, str),
         }, _prefs),
         ("financetracker/notify_targets", {}, _targets),
+        ("financetracker/account/interest", {
+            vol.Required("account"): str,
+            vol.Required("interest"): ANY_DICT,
+        }, _interest),
     ]
     for command, schema, func in commands:
         websocket_api.async_register_command(hass, _handler(command, schema, func))
