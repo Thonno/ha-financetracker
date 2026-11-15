@@ -50,6 +50,30 @@ Copy `custom_components/financetracker` into your Home Assistant `config/custom_
 2. Go to **Settings** and set up your accounts with their opening balances, your categories and your payment methods (a new archive starts with a sensible default set).
 3. Under **Recurring expense reminders**, tap the devices that should receive your notifications.
 4. Add your recurring expenses under **Recurring**, then start logging with the **+** button.
+5. Optionally, in **Settings**: pick the panel theme, a currency different from Home Assistant's, and interest rates for your savings accounts (see below).
+
+## Interest on savings accounts
+
+FinanceTracker can record the interest your savings account pays, day by day.
+
+1. Open **Settings → Accounts** in the panel and tap **%** next to the account.
+2. Add one or more **tiers**. Each tier has an upper limit and an annual rate; leave the limit empty on the last tier for "everything above". For example:
+
+   | Up to | Annual rate |
+   |---|---|
+   | 3,000 | 2.5 % |
+   | *(empty)* | 1 % |
+
+   With a €5,000 balance this gives 2.5 % on the first €3,000 and 1 % on the remaining €2,000, i.e. €95 gross per year.
+3. Set the **tax withheld** (e.g. 26 % in Italy) so recorded amounts are net, and the date to **calculate from**.
+4. Save. A preview shows the net daily, monthly and yearly yield on the current balance.
+
+How it works:
+
+- Interest is calculated on each day's **end-of-day balance** (including interest already credited) with the formula *balance × rate ÷ 365*, tier by tier.
+- Every night shortly after midnight, an **"Interest earned" income** is recorded on that account for the previous day, with the gross amount and the tax in the notes. If Home Assistant was off, the missing days are caught up at startup; choosing a start date in the past back-fills those days right away.
+- Amounts are rounded down to the cent, as banks do; the fraction left over is carried to the next day, so nothing is lost.
+- Editing past transactions does not recalculate interest that has already been recorded.
 
 ## Privacy and multi-user behaviour
 
