@@ -229,6 +229,9 @@ ha-icon{--mdc-icon-size:20px;display:inline-flex}
 header{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 12px 4px;flex:none}
 header .tt{flex:1;min-width:0}
 header h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.2px}
+header h1.logo{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.3px}
+header h1.logo .logo-ic{width:30px;height:30px;flex:none}
+header h1.logo b{font-weight:800;color:var(--acc2)}
 header .who{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--t2);margin-top:2px}
 .ib{background:rgba(var(--fgr),.06);border:var(--bd);color:rgba(var(--fgr),.88);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
 .ib[disabled]{opacity:.3}
@@ -381,6 +384,7 @@ const ICON = {
   del: "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z",
   swap: "M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z",
 };
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="logo-ic" aria-hidden="true"> <defs> <linearGradient id="ftl-body" x1="0" y1="0" x2="1" y2="1"> <stop offset="0" stop-color="#fbb04f"/><stop offset="1" stop-color="#e5762f"/> </linearGradient> <linearGradient id="ftl-flap" x1="0" y1="0" x2="1" y2="1"> <stop offset="0" stop-color="#c9621f"/><stop offset="1" stop-color="#a94e17"/> </linearGradient> <linearGradient id="ftl-coin" x1="0" y1="0" x2="0" y2="1"> <stop offset="0" stop-color="#ffe7a8"/><stop offset="1" stop-color="#ffc85c"/> </linearGradient> </defs> <path d="M40 76 L172 34 a14 14 0 0 1 18 9 L200 76 Z" fill="url(#ftl-flap)"/> <rect x="20" y="70" width="216" height="158" rx="30" fill="url(#ftl-body)"/> <rect x="150" y="118" width="98" height="62" rx="20" fill="#8a4414"/> <rect x="150" y="118" width="98" height="62" rx="20" fill="none" stroke="#5c2b0b" stroke-width="3"/> <circle cx="182" cy="149" r="13" fill="url(#ftl-coin)"/> <rect x="48" y="170" width="16" height="32" rx="5" fill="#fff" opacity=".92"/> <rect x="76" y="148" width="16" height="54" rx="5" fill="#fff" opacity=".92"/> <rect x="104" y="124" width="16" height="78" rx="5" fill="#fff" opacity=".92"/> </svg>`;
 const svg = (d) => `<svg viewBox="0 0 24 24"><path d="${d}"/></svg>`;
 const hd = (icon, title, label = "", right = "") =>
   `<div class="ph"><ha-icon icon="${icon}"></ha-icon><div class="pt"><b>${title}</b>${label ? `<span>${label}</span>` : ""}</div>${right}</div>`;
@@ -492,7 +496,9 @@ class FinanceTrackerPanel extends HTMLElement {
   _renderHeader() {
     const title = t(VIEWS.find((v) => v[0] === this.view)?.[1] || "Home");
     this.$header.innerHTML = `${this._narrow !== false ? `<button class="ib" data-a="menu" aria-label="${t("Menu")}">${svg(ICON.menu)}</button>` : ""}
-      <div class="tt"><h1>${this.view === "home" ? "FinanceTracker" : esc(title)}</h1>
+      <div class="tt">${this.view === "home"
+        ? `<h1 class="logo" aria-label="FinanceTracker">${LOGO_SVG}<span>Finance<b>Tracker</b></span></h1>`
+        : `<h1>${esc(title)}</h1>`}
       <div class="who">${this.data?.user ? t("Archivio di {0}", esc(this.data.user)) : t("Finanze personali")}</div></div>`;
   }
   _renderNav() {
