@@ -18,6 +18,7 @@ from homeassistant.util import slugify
 
 from . import logic
 from .const import DOMAIN, SIGNAL_ANY
+from .i18n import attr
 from .manager import FinanzeManager
 
 
@@ -34,51 +35,54 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     def build(manager: FinanzeManager) -> list[FinanzeSensor]:
         uid = manager.user_id
-        slug = slugify(manager.user_name or uid[:6])
         device = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_{uid}")},
-            name=f"Finanze {manager.user_name}".strip(),
-            manufacturer="Finanze personali",
+            name=f"FinanceTracker {manager.user_name}".strip(),
+            manufacturer="FinanceTracker",
             entry_type=DeviceEntryType.SERVICE,
             configuration_url="/finanze",
         )
         known = created.setdefault(uid, set())
+        a = lambda key: attr(hass, key)  # noqa: E731 - nome attributo nella lingua di HA
 
-        def mk(key: str, name: str, icon: str, value: Callable[[], Any],
-               attrs: Callable[[], dict] | None = None, monetary: bool = True) -> FinanzeSensor | None:
+        def mk(key: str, translation_key: str, icon: str, value: Callable[[], Any],
+               attrs: Callable[[], dict] | None = None, monetary: bool = True,
+               placeholders: dict[str, str] | None = None) -> FinanzeSensor | None:
             unique = f"{entry.entry_id}_{uid}_{key}"
             if unique in known:
                 return None
             known.add(unique)
-            return FinanzeSensor(manager, device, unique, f"sensor.finanze_{slug}_{key}",
-                                 name, icon, value, attrs, monetary)
+            return FinanzeSensor(manager, device, unique, translation_key, placeholders,
+                                 icon, value, attrs, monetary)
+
+        def month_bounds():
+            return logic.month_bounds(manager.today().year, manager.today().month)
 
         items = [
-            mk("saldo_totale", "Saldo totale", "mdi:wallet",
+            mk("saldo_totale", "total_balance", "mdi:wallet",
                lambda: round(sum(logic.account_balances(manager.data).values()), 2),
-               lambda: {"conti": logic.account_balances(manager.data)}),
-            mk("entrate_mese", "Entrate del mese", "mdi:arrow-down-bold-circle",
+               lambda: {a("accounts"): logic.account_balances(manager.data)}),
+            mk("entrate_mese", "income_month", "mdi:arrow-down-bold-circle",
                lambda: _month_totals(manager)["entrate"]),
-            mk("uscite_mese", "Uscite del mese", "mdi:arrow-up-bold-circle",
+            mk("uscite_mese", "expenses_month", "mdi:arrow-up-bold-circle",
                lambda: _month_totals(manager)["uscite"],
-               lambda: {"per_categoria": logic.expenses_by_category(
-                   manager.data["movements"],
-                   *logic.month_bounds(manager.today().year, manager.today().month))}),
-            mk("netto_mese", "Netto del mese", "mdi:scale-balance",
+               lambda: {a("by_category"): logic.expenses_by_category(manager.data["movements"], *month_bounds())}),
+            mk("netto_mese", "net_month", "mdi:scale-balance",
                lambda: _month_totals(manager)["netto"]),
-            mk("spese_fisse_mensili", "Spese fisse mensili", "mdi:calendar-sync",
+            mk("spese_fisse_mensili", "recurring_monthly", "mdi:calendar-sync",
                lambda: logic.recurring_monthly_total(manager.data["recurring"])),
-            mk("scadenze", "Spese fisse da registrare", "mdi:bell-ring",
+            mk("scadenze", "recurring_due", "mdi:bell-ring",
                lambda: len(logic.recurring_due(manager.data["recurring"], manager.today())),
-               lambda: {"voci": [
-                   {"nome": r["name"], "importo": r["amount"], "scadenza": r["next_due"]}
+               lambda: {a("items"): [
+                   {a("name"): r["name"], a("amount"): r["amount"], a("due"): r["next_due"]}
                    for r in logic.recurring_due(manager.data["recurring"], manager.today())]},
                monetary=False),
         ]
         for acc in manager.data["accounts"]:
             name = acc["name"]
-            items.append(mk(f"saldo_{slugify(name)}", f"Saldo {name}", "mdi:bank",
-                            lambda n=name: logic.account_balances(manager.data).get(n)))
+            items.append(mk(f"saldo_{slugify(name)}", "account_balance", "mdi:bank",
+                            lambda n=name: logic.account_balances(manager.data).get(n),
+                            placeholders={"account": name}))
         return [e for e in items if e is not None]
 
     entities: list[FinanzeSensor] = []
@@ -113,14 +117,16 @@ class FinanzeSensor(SensorEntity):
     _attr_should_poll = True  # aggiorna anche al cambio di giorno / mese
 
     def __init__(self, manager: FinanzeManager, device: DeviceInfo, unique_id: str,
-                 entity_id: str, name: str, icon: str, value: Callable[[], Any],
-                 attrs: Callable[[], dict] | None, monetary: bool) -> None:
+                 translation_key: str, placeholders: dict[str, str] | None, icon: str,
+                 value: Callable[[], Any], attrs: Callable[[], dict] | None, monetary: bool) -> None:
         self._manager = manager
         self._value = value
         self._attrs = attrs
         self._attr_unique_id = unique_id
-        self.entity_id = entity_id
-        self._attr_name = name
+        # nome (e quindi entity_id) creato da Home Assistant nella lingua del sistema
+        self._attr_translation_key = translation_key
+        if placeholders:
+            self._attr_translation_placeholders = placeholders
         self._attr_icon = icon
         self._attr_device_info = device
         if monetary:

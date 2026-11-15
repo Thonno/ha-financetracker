@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 DOMAIN = "finanze"
-VERSION = "1.1.2"
+VERSION = "1.2.0"
 
 STORAGE_KEY = "finanze.utente_{}"
 INDEX_KEY = "finanze.utenti"

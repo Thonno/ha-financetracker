@@ -1,17 +1,18 @@
 {
+  "title": "FinanceTracker",
   "config": {
     "step": {
       "user": {
-        "title": "Finanze",
-        "description": "Ogni utente di Home Assistant ha il proprio archivio separato. Qui scegli solo l'ora dei promemoria: i dispositivi da notificare li sceglie ogni utente nel pannello Finanze → Impostazioni.",
+        "title": "FinanceTracker",
+        "description": "Ogni utente di Home Assistant ha il proprio archivio separato. Qui scegli solo l'ora dei promemoria: i dispositivi da notificare li sceglie ogni utente nel pannello FinanceTracker → Impostazioni.",
         "data": {
           "notify_time": "Ora del promemoria"
         }
       }
     },
     "abort": {
-      "already_configured": "Finanze è già configurata.",
-      "single_instance_allowed": "Finanze è già configurata."
+      "already_configured": "FinanceTracker è già configurato.",
+      "single_instance_allowed": "FinanceTracker è già configurato."
     }
   },
   "options": {
@@ -24,10 +25,35 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "total_balance": {
+        "name": "Saldo totale"
+      },
+      "account_balance": {
+        "name": "Saldo {account}"
+      },
+      "income_month": {
+        "name": "Entrate del mese"
+      },
+      "expenses_month": {
+        "name": "Uscite del mese"
+      },
+      "net_month": {
+        "name": "Netto del mese"
+      },
+      "recurring_monthly": {
+        "name": "Spese fisse mensili"
+      },
+      "recurring_due": {
+        "name": "Spese fisse da registrare"
+      }
+    }
+  },
   "services": {
     "aggiungi_movimento": {
       "name": "Aggiungi movimento",
-      "description": "Registra un'entrata, un'uscita o un trasferimento.",
+      "description": "Registra un'entrata, un'uscita o un trasferimento nell'archivio dell'utente.",
       "fields": {
         "importo": {
           "name": "Importo",
@@ -55,7 +81,7 @@
         },
         "metodo": {
           "name": "Metodo di pagamento",
-          "description": "Bancomat, Carta, PayPal…"
+          "description": "Bancomat, carta, PayPal…"
         },
         "data": {
           "name": "Data",
@@ -77,7 +103,7 @@
       "fields": {
         "spesa": {
           "name": "Spesa fissa",
-          "description": "Nome (es. Mutuo) o id della spesa fissa."
+          "description": "Nome o id della spesa fissa."
         },
         "importo": {
           "name": "Importo",
@@ -89,7 +115,7 @@
         },
         "utente": {
           "name": "Utente",
-          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
+          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant. Vuoto = chi esegue l'azione."
         }
       }
     }

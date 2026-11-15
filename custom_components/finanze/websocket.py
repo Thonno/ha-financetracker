@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN, VERSION
+from .i18n import tr
 from .manager import FinanzeError, FinanzeManager, FinanzeRegistry
 
 ANY_DICT = vol.Schema({}, extra=vol.ALLOW_EXTRA)
@@ -18,7 +19,7 @@ ANY_DICT = vol.Schema({}, extra=vol.ALLOW_EXTRA)
 async def _manager(hass: HomeAssistant, connection: websocket_api.ActiveConnection) -> FinanzeManager:
     registry: FinanzeRegistry | None = hass.data.get(DOMAIN)
     if registry is None:
-        raise FinanzeError("Integrazione Finanze non configurata")
+        raise FinanzeError(tr(hass, "not_configured"))
     # ogni utente vede e modifica solo il proprio archivio
     return await registry.get(connection.user.id if connection.user else None)
 

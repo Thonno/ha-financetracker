@@ -13,6 +13,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from . import logic
+from .i18n import defaults, tr
 from .const import DEFAULT_DATA, INDEX_KEY, SIGNAL_ANY, SIGNAL_UPDATED, STORAGE_KEY, STORAGE_VERSION
 
 MOVEMENT_FIELDS = (
@@ -42,7 +43,7 @@ class FinanzeManager:
         self.user_name = user_name
         self.signal = SIGNAL_UPDATED.format(user_id)
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY.format(user_id))
-        self.data: dict[str, Any] = copy.deepcopy(DEFAULT_DATA)
+        self.data: dict[str, Any] = {**copy.deepcopy(DEFAULT_DATA), **copy.deepcopy(defaults(hass))}
 
     async def async_load(self) -> None:
         stored = await self._store.async_load()
@@ -71,13 +72,13 @@ class FinanzeManager:
         for item in self.data[key]:
             if item["id"] == item_id:
                 return item
-        raise FinanzeError(f"Elemento non trovato: {item_id}")
+        raise FinanzeError(tr(self.hass, "not_found", ref=item_id))
 
     def find_recurring(self, ref: str) -> dict:
         for item in self.data["recurring"]:
             if item["id"] == ref or item["name"].lower() == str(ref).lower():
                 return item
-        raise FinanzeError(f"Spesa fissa non trovata: {ref}")
+        raise FinanzeError(tr(self.hass, "recurring_not_found", ref=ref))
 
     def _account_names(self) -> list[str]:
         return [a["name"] for a in self.data["accounts"]]
@@ -89,13 +90,13 @@ class FinanzeManager:
                 m[key] = raw[key]
         m["type"] = str(m.get("type", logic.TIPO_USCITA)).lower()
         if m["type"] not in logic.TIPI:
-            raise FinanzeError(f"Tipo non valido: {m['type']}")
+            raise FinanzeError(tr(self.hass, "bad_type", type=m["type"]))
         try:
             m["amount"] = round(abs(float(str(m.get("amount", "")).replace(",", "."))), 2)
         except ValueError as err:
-            raise FinanzeError("Importo non valido") from err
+            raise FinanzeError(tr(self.hass, "bad_amount")) from err
         if m["amount"] <= 0:
-            raise FinanzeError("L'importo deve essere maggiore di zero")
+            raise FinanzeError(tr(self.hass, "amount_positive"))
         m["date"] = logic.parse_date(m.get("date") or self.today()).isoformat()
         for key in ("category", "description", "method", "account", "to_account", "note"):
             m[key] = str(m.get(key) or "").strip()
@@ -103,10 +104,10 @@ class FinanzeManager:
         if not m["account"] and accounts:
             m["account"] = accounts[0]
         if m["account"] not in accounts:
-            raise FinanzeError(f"Conto sconosciuto: {m['account']}")
+            raise FinanzeError(tr(self.hass, "unknown_account", account=m["account"]))
         if m["type"] == logic.TIPO_TRASFERIMENTO:
             if m["to_account"] not in accounts or m["to_account"] == m["account"]:
-                raise FinanzeError("Per un trasferimento scegli un conto di destinazione diverso")
+                raise FinanzeError(tr(self.hass, "transfer_accounts"))
         else:
             m["to_account"] = ""
         return m
@@ -143,7 +144,7 @@ class FinanzeManager:
                             methods: list[str], renames: dict[str, dict[str, str]]) -> None:
         names = [str(a["name"]).strip() for a in accounts]
         if not names or any(not n for n in names) or len(set(names)) != len(names):
-            raise FinanzeError("I nomi dei conti devono essere diversi e non vuoti")
+            raise FinanzeError(tr(self.hass, "account_names"))
         ren_acc = renames.get("accounts", {})
         ren_cat = renames.get("categories", {})
         ren_met = renames.get("methods", {})
@@ -184,7 +185,7 @@ class FinanzeManager:
                 item[key] = raw[key]
         item["name"] = str(item.get("name") or "").strip()
         if not item["name"]:
-            raise FinanzeError("Dai un nome alla spesa fissa")
+            raise FinanzeError(tr(self.hass, "recurring_name"))
         item["amount"] = round(abs(float(item.get("amount") or 0)), 2)
         item["cadence_months"] = int(item.get("cadence_months") or 1)
         due = logic.parse_date(item.get("next_due") or self.today())
@@ -232,7 +233,7 @@ class FinanzeManager:
     # ------------------------------------------------------------ import/export
     async def import_data(self, payload: dict, mode: str = "replace") -> dict[str, int]:
         if payload.get("format") != "finanze":
-            raise FinanzeError("File non riconosciuto: serve un export di Finanze")
+            raise FinanzeError(tr(self.hass, "bad_file"))
         if mode == "replace":
             settings = self.data["settings"]
             self.data = {key: copy.deepcopy(payload.get(key, DEFAULT_DATA[key])) for key in DEFAULT_DATA}
@@ -289,12 +290,12 @@ class FinanzeRegistry:
 
     async def get(self, user_id: str | None) -> FinanzeManager:
         if not user_id:
-            raise FinanzeError("Utente sconosciuto")
+            raise FinanzeError(tr(self.hass, "unknown_user"))
         if user_id in self.managers:
             return self.managers[user_id]
         user = await self.hass.auth.async_get_user(user_id)
         if user is None or user.system_generated:
-            raise FinanzeError("Utente non valido")
+            raise FinanzeError(tr(self.hass, "invalid_user"))
         manager = await self._load(user_id, user.name or "")
         if user_id not in self._known:
             self._known.append(user_id)
@@ -306,7 +307,7 @@ class FinanzeRegistry:
         for user in await self.hass.auth.async_get_users():
             if not user.system_generated and (user.name or "").strip().lower() == wanted:
                 return await self.get(user.id)
-        raise FinanzeError(f"Nessun utente di Home Assistant si chiama «{name}»")
+        raise FinanzeError(tr(self.hass, "no_such_user", name=name))
 
     def find_item_owner(self, item_id: str) -> FinanzeManager | None:
         for manager in self.managers.values():

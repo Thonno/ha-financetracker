@@ -1,95 +1,121 @@
 {
+  "title": "FinanceTracker",
   "config": {
     "step": {
       "user": {
-        "title": "Finanze",
-        "description": "Each Home Assistant user gets a separate archive. Here you only pick the reminder time; each user chooses the devices to notify in the Finanze panel → Settings.",
+        "title": "FinanceTracker",
+        "description": "Every Home Assistant user gets a separate, private archive. Here you only choose the reminder time; each user picks the devices to notify in the FinanceTracker panel → Settings.",
         "data": {
           "notify_time": "Reminder time"
         }
       }
     },
     "abort": {
-      "already_configured": "Already configured.",
-      "single_instance_allowed": "Already configured."
+      "already_configured": "FinanceTracker is already set up.",
+      "single_instance_allowed": "FinanceTracker is already set up."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Recurring-expense reminders",
+        "title": "Recurring expense reminders",
         "data": {
           "notify_time": "Reminder time"
         }
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "total_balance": {
+        "name": "Total balance"
+      },
+      "account_balance": {
+        "name": "{account} balance"
+      },
+      "income_month": {
+        "name": "Income this month"
+      },
+      "expenses_month": {
+        "name": "Expenses this month"
+      },
+      "net_month": {
+        "name": "Net this month"
+      },
+      "recurring_monthly": {
+        "name": "Monthly recurring expenses"
+      },
+      "recurring_due": {
+        "name": "Recurring expenses due"
+      }
+    }
+  },
   "services": {
     "aggiungi_movimento": {
-      "name": "Aggiungi movimento",
-      "description": "Registra un'entrata, un'uscita o un trasferimento.",
+      "name": "Add transaction",
+      "description": "Records an expense, income or transfer in the user's archive.",
       "fields": {
         "importo": {
-          "name": "Importo",
-          "description": "Importo in euro, sempre positivo."
+          "name": "Amount",
+          "description": "Amount in euro, always positive."
         },
         "tipo": {
-          "name": "Tipo",
-          "description": "uscita, entrata o trasferimento."
+          "name": "Type",
+          "description": "uscita (expense), entrata (income) or trasferimento (transfer)."
         },
         "categoria": {
-          "name": "Categoria",
-          "description": "Categoria del movimento."
+          "name": "Category",
+          "description": "Transaction category."
         },
         "descrizione": {
-          "name": "Descrizione",
-          "description": "Descrizione libera."
+          "name": "Description",
+          "description": "Free text."
         },
         "conto": {
-          "name": "Conto",
-          "description": "Conto su cui avviene il movimento (vuoto = primo conto)."
+          "name": "Account",
+          "description": "Account the transaction belongs to (empty = first account)."
         },
         "conto_destinazione": {
-          "name": "Conto di destinazione",
-          "description": "Solo per i trasferimenti."
+          "name": "Destination account",
+          "description": "Transfers only."
         },
         "metodo": {
-          "name": "Metodo di pagamento",
-          "description": "Bancomat, Carta, PayPal…"
+          "name": "Payment method",
+          "description": "Debit card, credit card, PayPal…"
         },
         "data": {
-          "name": "Data",
-          "description": "Vuoto = oggi."
+          "name": "Date",
+          "description": "Empty = today."
         },
         "note": {
-          "name": "Note",
-          "description": "Note facoltative."
+          "name": "Notes",
+          "description": "Optional notes."
         },
         "utente": {
-          "name": "Utente",
-          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
+          "name": "User",
+          "description": "Automations only: name of the Home Assistant user whose archive to write to. Empty = the user running the action."
         }
       }
     },
     "registra_spesa_fissa": {
-      "name": "Registra spesa fissa",
-      "description": "Registra la rata di una spesa fissa e sposta in avanti la scadenza.",
+      "name": "Register recurring expense",
+      "description": "Records the instalment of a recurring expense and moves its due date forward.",
       "fields": {
         "spesa": {
-          "name": "Spesa fissa",
-          "description": "Nome (es. Mutuo) o id della spesa fissa."
+          "name": "Recurring expense",
+          "description": "Name or id of the recurring expense."
         },
         "importo": {
-          "name": "Importo",
-          "description": "Vuoto = importo previsto."
+          "name": "Amount",
+          "description": "Empty = expected amount."
         },
         "data": {
-          "name": "Data",
-          "description": "Vuoto = data di scadenza."
+          "name": "Date",
+          "description": "Empty = due date."
         },
         "utente": {
-          "name": "Utente",
-          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
+          "name": "User",
+          "description": "Automations only: Home Assistant user name. Empty = the user running the action."
         }
       }
     }

@@ -2,7 +2,7 @@
 
 A personal finance tracker that lives inside Home Assistant. You log income and expenses by hand – no bank connection, no receipt scanning, no cloud service – and get balances, monthly reports and reminders for recurring payments, from a sidebar panel designed for the Home Assistant Companion app on your phone.
 
-> **Language:** the panel's interface is currently in **Italian** (the integration's domain is `finanze`). Translations are welcome – see [Contributing](#contributing).
+> **Languages:** English and Italian. The panel, the entity names, the notifications and the starter categories follow the language set in Home Assistant (any other language falls back to English). More translations are welcome – see [Contributing](#contributing).
 
 ## Features
 
@@ -29,8 +29,8 @@ A personal finance tracker that lives inside Home Assistant. You log income and 
 
 1. In HACS open the menu (⋮) → **Custom repositories**.
 2. Add `https://github.com/Thonno/ha-financetracker` with type **Integration**.
-3. Search for **Finanze**, download it, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration → Finanze** and choose the time of day for reminders.
+3. Search for **FinanceTracker**, download it, then restart Home Assistant.
+4. Go to **Settings → Devices & services → Add integration → FinanceTracker** and choose the time of day for reminders.
 
 ### Manual
 
@@ -38,10 +38,10 @@ Copy `custom_components/finanze` into your Home Assistant `config/custom_compone
 
 ## First steps
 
-1. Open **Finanze** from the sidebar. The subtitle shows whose archive you are in.
-2. Go to **Impostazioni** (Settings) and set up your accounts with their opening balances, your categories and your payment methods.
-3. Under **Promemoria** (Reminders), tap the devices that should receive your recurring-expense notifications.
-4. Add your recurring expenses under **Spese fisse**, then start logging with the **+** button.
+1. Open **FinanceTracker** from the sidebar. The subtitle shows whose archive you are in.
+2. Go to **Settings** and set up your accounts with their opening balances, your categories and your payment methods (a new archive starts with a sensible default set).
+3. Under **Recurring expense reminders**, tap the devices that should receive your notifications.
+4. Add your recurring expenses under **Recurring**, then start logging with the **+** button.
 
 ## Privacy and multi-user behaviour
 
@@ -53,17 +53,17 @@ Copy `custom_components/finanze` into your Home Assistant `config/custom_compone
 
 ## Sensors (optional, per user)
 
-Turn them on in **Impostazioni → Sensori in Home Assistant**. `<user>` is the slug of the Home Assistant user name.
+Turn them on in the panel under **Settings → Sensors in Home Assistant**. Each user gets a device called *FinanceTracker &lt;user&gt;*; entity names – and therefore entity IDs – are created in your Home Assistant language, for example `sensor.financetracker_mario_total_balance` in English or `sensor.financetracker_mario_saldo_totale` in Italian.
 
-| Entity | Value |
+| Sensor | Value |
 |---|---|
-| `sensor.finanze_<user>_saldo_totale` | Total balance (`conti` attribute: balance per account) |
-| `sensor.finanze_<user>_saldo_<account>` | Balance of one account |
-| `sensor.finanze_<user>_entrate_mese` | Income this month |
-| `sensor.finanze_<user>_uscite_mese` | Expenses this month (`per_categoria` attribute) |
-| `sensor.finanze_<user>_netto_mese` | Net this month |
-| `sensor.finanze_<user>_spese_fisse_mensili` | Monthly total of active recurring expenses |
-| `sensor.finanze_<user>_scadenze` | Number of recurring expenses waiting to be registered |
+| Total balance | Sum of all accounts (attribute with the balance of each account) |
+| *&lt;account&gt;* balance | Balance of one account |
+| Income this month | |
+| Expenses this month | With a per-category attribute |
+| Net this month | Income minus expenses |
+| Monthly recurring expenses | Monthly total of active recurring expenses |
+| Recurring expenses due | Number of recurring expenses waiting to be registered |
 
 ## Actions
 
@@ -92,7 +92,7 @@ Both actions return the created transaction as response data.
 
 ## Import and export
 
-From **Impostazioni → Dati** in the panel:
+From **Settings → Data** in the panel:
 
 - **Export backup (JSON)**: your full archive, minus your personal notification settings.
 - **Export transactions (CSV)**: semicolon-separated, opens directly in Excel and LibreOffice.
@@ -115,7 +115,9 @@ The JSON format is simple: `accounts`, `categories`, `methods`, `movements` and 
 
 ## Contributing
 
-Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/finanze/frontend/finanze-panel.js`, and the calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
+Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/finanze/frontend/finanze-panel.js`; its strings are in the `EN` table at the top of the file, keyed by the Italian text. Server-side texts are in `i18n.py` and `translations/`. Calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
+
+The integration's internal domain is `finanze` (used in action names such as `finanze.aggiungi_movimento`).
 
 ## License
 

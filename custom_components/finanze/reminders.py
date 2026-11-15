@@ -12,15 +12,18 @@ from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later, async_track_time_change
 
 from . import logic
+from .i18n import language, tr
 from .const import ACTION_REGISTER, ACTION_SKIP, PANEL_URL
 from .manager import FinanzeError, FinanzeManager, FinanzeRegistry
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def euro(value: float) -> str:
-    text = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"{text} €"
+def euro(value: float, lang: str = "it") -> str:
+    if lang == "it":
+        text = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"{text} €"
+    return f"€{value:,.2f}"
 
 
 def _services(manager: FinanzeManager) -> list[str]:
@@ -62,7 +65,9 @@ class Reminders:
 
     async def _send(self, services: list[str], item: dict) -> None:
         due = logic.parse_date(item["next_due"])
-        message = f"{item['name']} · {euro(float(item['amount']))} · {due:%d/%m}"
+        lang = language(self.hass)
+        when = f"{due:%d/%m}" if lang == "it" else f"{due:%d %b}"
+        message = f"{item['name']} · {euro(float(item['amount']), lang)} · {when}"
         if item.get("account"):
             message += f" ({item['account']})"
         data = {
@@ -71,15 +76,16 @@ class Reminders:
             "url": f"/{PANEL_URL}",
             "clickAction": f"/{PANEL_URL}",
             "actions": [
-                {"action": f"{ACTION_REGISTER}{item['id']}", "title": "Registra"},
-                {"action": f"{ACTION_SKIP}{item['id']}", "title": "Salta", "destructive": True},
+                {"action": f"{ACTION_REGISTER}{item['id']}", "title": tr(self.hass, "notify_register")},
+                {"action": f"{ACTION_SKIP}{item['id']}", "title": tr(self.hass, "notify_skip"),
+                 "destructive": True},
             ],
         }
         for service in services:
             try:
                 await self.hass.services.async_call(
                     "notify", service,
-                    {"title": "Spesa fissa in scadenza", "message": message, "data": data},
+                    {"title": tr(self.hass, "notify_title"), "message": message, "data": data},
                     blocking=True,
                 )
             except Exception as err:  # noqa: BLE001 - una notifica fallita non deve bloccare le altre

@@ -1,11 +1,90 @@
-/* Finanze – pannello per Home Assistant (nessuna dipendenza esterna). */
+/* FinanceTracker – pannello per Home Assistant (nessuna dipendenza esterna).
+ * Lingua: italiano se Home Assistant è in italiano, altrimenti inglese. */
 
-const EUR = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
-const EUR0 = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const MONTHS = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto",
-  "Settembre", "Ottobre", "Novembre", "Dicembre"];
-const MONTHS_SHORT = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
-const DAYS = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+/* ------------------------------------------------------------- traduzioni */
+const EN = {
+  "Home": "Home", "Movimenti": "Transactions", "Report": "Reports", "Spese fisse": "Recurring", "Impostazioni": "Settings",
+  "Mensile": "Monthly", "Bimestrale": "Every 2 months", "Trimestrale": "Quarterly", "Semestrale": "Every 6 months", "Annuale": "Yearly",
+  "Uscita": "Expense", "Entrata": "Income", "Trasferimento": "Transfer",
+  "Errore: {0}": "Error: {0}", "Caricamento…": "Loading…", "Archivio di {0}": "{0}'s archive", "Finanze personali": "Personal finance",
+  "Aggiungi": "Add", "Menu": "Menu", "Nessuna uscita": "No expenses", "da verificare": "to check",
+  "Scaduta il {0}": "Overdue since {0}", "Scade il {0}": "Due {0}", "Salta": "Skip", "Registra": "Register",
+  "Saldo attuale": "Current balance", "Spese fisse da registrare": "Recurring expenses to register",
+  "1 scadenza": "1 due", "{0} scadenze": "{0} due", "{0} operazioni": "{0} transactions",
+  "Entrate": "Income", "Uscite": "Expenses", "Netto": "Net",
+  "Hai speso il {0}% delle entrate del mese": "You have spent {0}% of this month's income",
+  "Nessuna entrata registrata questo mese": "No income recorded this month",
+  "Dove vanno i soldi": "Where the money goes", "Uscite di {0} · tocca per i dettagli": "{0} expenses · tap for details",
+  "In arrivo": "Coming up", "Prossimi 14 giorni": "Next 14 days", "Ultimi movimenti": "Latest transactions", "Tutti": "All",
+  "Ancora nessun movimento. Tocca + per iniziare.": "No transactions yet. Tap + to start.",
+  "Tutti i mesi": "All months", "Cerca descrizione, categoria, importo…": "Search description, category, amount…",
+  "Trasferimenti": "Transfers", "Tutte le categorie": "All categories", "Tutti i conti": "All accounts",
+  "Nessun movimento trovato": "No transactions found", "Anno {0}": "Year {0}", "Mese": "Month", "Anno": "Year",
+  "Risparmio: {0}% delle entrate": "Savings: {0}% of income", "Andamento mensile": "Monthly trend",
+  "Entrate e uscite": "Income and expenses", "Uscite per categoria": "Expenses by category", "Tocca per i dettagli": "Tap for details",
+  "Mutuo, finanziamenti, abbonamenti": "Mortgage, loans, subscriptions", "Per metodo di pagamento": "By payment method",
+  "Per conto": "By account",
+  "I trasferimenti tra conti (prelievi, conto deposito) non contano né come entrate né come uscite.":
+    "Transfers between accounts (withdrawals, savings) count as neither income nor expenses.",
+  "{0} mesi": "every {0} months", "prossima {0}": "next {0}", "terminata": "ended", "fino a {0}": "until {0}",
+  "Totale mensile": "Monthly total", "Le spese annuali o trimestrali sono ripartite al mese.": "Yearly and quarterly expenses are spread across months.",
+  "Da registrare": "To register", "Attive": "Active", "{0} spese": "{0} expenses", "Nessuna spesa fissa": "No recurring expenses",
+  "Terminate": "Ended", "Nome": "Name", "Usata in {0} movimenti": "Used in {0} transactions", "Elimina": "Delete",
+  "Conti": "Accounts", "Nome e saldo iniziale": "Name and opening balance", "Saldo iniziale": "Opening balance", "Nome conto": "Account name",
+  "Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.":
+    "The number on the right shows how many transactions use an item: items in use can be renamed but not deleted. Renaming updates the transactions too.",
+  "Categorie": "Categories", "Metodi di pagamento": "Payment methods", "Annulla modifiche": "Discard changes", "Salva impostazioni": "Save settings",
+  "Dati": "Data", "Import, export e backup": "Import, export and backup",
+  "I dati sono salvati in Home Assistant (cartella <code>.storage</code>) e inclusi nei backup.":
+    "Your data is stored in Home Assistant (<code>.storage</code> folder) and included in its backups.",
+  "Esporta backup (JSON)": "Export backup (JSON)", "Esporta movimenti (CSV)": "Export transactions (CSV)",
+  "Importa e aggiungi…": "Import and add…", "Importa e sostituisci tutto…": "Import and replace everything…",
+  "Per il primo avvio usa «sostituisci tutto» con il file da importare.": "On first use, choose “replace everything” with the file to import.",
+  "Promemoria spese fisse": "Recurring expense reminders", "Dispositivi su cui ricevi le notifiche": "Devices that receive your notifications",
+  "Nessun dispositivo di notifica trovato.": "No notification devices found.",
+  "L'orario si imposta in Impostazioni → Dispositivi e servizi → FinanceTracker → Configura.":
+    "Set the time in Settings → Devices & services → FinanceTracker → Configure.",
+  "Sensori in Home Assistant": "Sensors in Home Assistant", "Saldo, entrate e uscite come entità": "Balance, income and expenses as entities",
+  "Crea i sensori di FinanceTracker da usare nelle tue dashboard e automazioni.": "Create FinanceTracker sensors for your dashboards and automations.",
+  "Attenzione:": "Note:", "le entità di Home Assistant sono visibili a tutti gli utenti.": "Home Assistant entities are visible to every user.",
+  "Sensori": "Sensors", "{0} movimenti": "{0} transactions",
+  "Modifica movimento": "Edit transaction", "Nuovo movimento": "New transaction", "Descrizione": "Description",
+  "Es. Prelievo bancomat": "E.g. ATM withdrawal", "Es. Coop, Netflix, Stipendio…": "E.g. supermarket, Netflix, salary…",
+  "Da conto": "From account", "A conto": "To account", "Categoria": "Category", "Meno": "Less", "Altre {0}…": "{0} more…",
+  "+ Nuova": "+ New", "Nome nuova categoria": "New category name", "Conto": "Account", "Metodo": "Method", "Data": "Date",
+  "Oggi": "Today", "Ieri": "Yesterday", "Note": "Notes", "Facoltative, es. Da rimborsare": "Optional, e.g. to be reimbursed",
+  "Conferma eliminazione": "Confirm delete", "Salva modifiche": "Save changes", "Spesa fissa": "Recurring expense",
+  "Nuova spesa fissa": "New recurring expense", "Es. Netflix": "E.g. Netflix", "Importo (€)": "Amount (€)", "Cadenza": "Frequency",
+  "Prossima scadenza": "Next due date", "Ultima rata (facoltativa)": "Last instalment (optional)", "Attiva": "Active",
+  "Non ho trovato pagamenti di questa spesa nei movimenti importati: controlla la data della prossima scadenza.":
+    "No payments for this expense were found in the imported transactions: check the next due date.",
+  "Conferma": "Confirm", "Registra ora": "Register now", "Salva": "Save",
+  "Movimento eliminato": "Transaction deleted", "Spesa fissa eliminata": "Recurring expense deleted", "Registrata: {0} {1}": "Registered: {0} {1}",
+  "Scadenza saltata": "Skipped", "Notifiche attive su {0}": "Notifications on for {0}", "Notifiche disattivate su {0}": "Notifications off for {0}",
+  "Sensori creati": "Sensors created", "Sensori rimossi": "Sensors removed", "Inserisci un importo": "Enter an amount",
+  "Scegli una categoria": "Pick a category", "Scegli due conti diversi": "Pick two different accounts", "Modifiche salvate": "Changes saved",
+  "Aggiunto {0}": "Added {0}", "Dai un nome alla spesa": "Give the expense a name", "Spesa fissa salvata": "Recurring expense saved",
+  "Impostazioni salvate": "Settings saved", "Importati: {0} movimenti, {1} spese fisse": "Imported: {0} transactions, {1} recurring expenses",
+  "Importazione non riuscita: {0}": "Import failed: {0}",
+  "Tipo": "Type", "Conto destinazione": "Destination account", "Importo": "Amount", "Inserito da": "Added by",
+};
+let LANG = "it", LOCALE = "it-IT", DEC = ",";
+let EUR, EUR0;
+const t = (s, ...args) => {
+  let r = LANG === "it" ? s : (EN[s] ?? s);
+  args.forEach((v, i) => { r = r.replace(`{${i}}`, v); });
+  return r;
+};
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+function setLocale(lang) {
+  LANG = String(lang || "en").toLowerCase().startsWith("it") ? "it" : "en";
+  LOCALE = lang || (LANG === "it" ? "it-IT" : "en-GB");
+  try { new Intl.NumberFormat(LOCALE); } catch (e) { LOCALE = LANG === "it" ? "it-IT" : "en-GB"; }
+  EUR = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
+  EUR0 = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  DEC = (1.5).toLocaleString(LOCALE).includes(",") ? "," : ".";
+}
+setLocale("it");
 const CADENZE = { 1: "Mensile", 2: "Bimestrale", 3: "Trimestrale", 6: "Semestrale", 12: "Annuale" };
 const TIPI = { uscita: "Uscita", entrata: "Entrata", trasferimento: "Trasferimento" };
 const VIEWS = [
@@ -23,11 +102,20 @@ const pad = (n) => String(n).padStart(2, "0");
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseD = (s) => { const [y, m, d] = String(s).slice(0, 10).split("-").map(Number); return new Date(y, m - 1, d); };
 const ym = (s) => String(s).slice(0, 7);
-const ymLabel = (k) => { const [y, m] = k.split("-").map(Number); return `${MONTHS[m - 1]} ${y}`; };
+const ymLabel = (k) => { const [y, m] = k.split("-").map(Number); return cap(new Date(y, m - 1, 1).toLocaleDateString(LOCALE, { month: "long", year: "numeric" })); };
+const monthName = (m) => new Date(2000, m - 1, 1).toLocaleDateString(LOCALE, { month: "long" });
+const monthShort = (m) => new Date(2000, m - 1, 1).toLocaleDateString(LOCALE, { month: "short" }).replace(".", "");
+const dayLabel = (d, withYear) => d.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long", ...(withYear ? { year: "numeric" } : {}) });
+const fmtDec = (v) => Number(v || 0).toFixed(2).replace(".", DEC);
 const shiftYm = (k, n) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
-const dShort = (s) => { const d = parseD(s); return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`; };
+const dShort = (s) => parseD(s).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }).replace(".", "");
 const hue = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
-const num = (v) => { const n = parseFloat(String(v ?? "").replace(/\s/g, "").replace(",", ".")); return Number.isFinite(n) ? n : NaN; };
+const num = (v) => {
+  let s = String(v ?? "").replace(/[\s€]/g, "");
+  if (DEC === ",") { if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); }
+  else s = s.replace(/,/g, "");
+  const n = parseFloat(s); return Number.isFinite(n) ? n : NaN;
+};
 
 /* ----------------------------------------------------------------- calcoli */
 function balances(data) {
@@ -238,7 +326,13 @@ const CAT_ICON = {
   farmacia: "mdi:pill", amazon: "mdi:package-variant-closed", "ricarica telefonica": "mdi:cellphone", svapo: "mdi:smoke",
   "conto deposito": "mdi:piggy-bank-outline", prelievo: "mdi:cash", "subito.it": "mdi:tag-outline",
   acquisiti: "mdi:shopping-outline", altro: "mdi:dots-horizontal-circle-outline", trasferimento: "mdi:swap-horizontal",
+  groceries: "mdi:cart-outline", mortgage: "mdi:home-city-outline", home: "mdi:sofa-outline", bills: "mdi:flash-outline",
+  subscriptions: "mdi:television-play", restaurants: "mdi:silverware-fork-knife", takeaway: "mdi:moped-outline", pets: "mdi:paw",
+  leisure: "mdi:party-popper", salary: "mdi:cash-plus", loan: "mdi:credit-card-clock-outline", fuel: "mdi:gas-station-outline",
+  pharmacy: "mdi:pill", phone: "mdi:cellphone", savings: "mdi:piggy-bank-outline", withdrawal: "mdi:cash",
+  shopping: "mdi:shopping-outline", other: "mdi:dots-horizontal-circle-outline", transfer: "mdi:swap-horizontal",
 };
+const FIXED_RE = /^(mutuo|finanziament|abbonament|mortgage|loan|subscription)/i;
 const catIcon = (c) => CAT_ICON[String(c || "").toLowerCase()] || "mdi:tag-outline";
 const tint = (c) => { const h = hue(c); return `background:hsla(${h},70%,60%,.14);color:hsl(${h},75%,68%)`; };
 const tile = (label, value, cls = "", sub = "", icon = "") =>
@@ -260,6 +354,11 @@ class FinanzePanel extends HTMLElement {
   set hass(h) {
     const first = !this._hass;
     this._hass = h;
+    const lang = h?.locale?.language || h?.language || "en";
+    if (lang !== this._lang) {
+      this._lang = lang; setLocale(lang);
+      if (this._built) { this._renderHeader(); this._renderNav(); this._renderMain(); if (this.sheet) this._renderSheet(); }
+    }
     if (first) this._subscribe();
   }
   get hass() { return this._hass; }
@@ -278,7 +377,7 @@ class FinanzePanel extends HTMLElement {
     if (!this._hass || this._unsub) return;
     if (!this._built) this._build();
     this._unsub = this._hass.connection.subscribeMessage((d) => this._onData(d), { type: "finanze/subscribe" });
-    this._unsub.catch((e) => { this._unsub = null; this.$main.innerHTML = `<div class="loading">Errore: ${esc(e.message || e.code || e)}</div>`; });
+    this._unsub.catch((e) => { this._unsub = null; this.$main.innerHTML = `<div class="loading">${t("Errore: {0}", esc(e.message || e.code || e))}</div>`; });
   }
 
   _onData(d) {
@@ -297,7 +396,7 @@ class FinanzePanel extends HTMLElement {
   _build() {
     this._built = true;
     this.shadowRoot.innerHTML = `<style>${STYLE}</style>
-      <div class="app"><header></header><main><div class="loading">Caricamento…</div></main><div id="fab"></div><nav></nav></div>
+      <div class="app"><header></header><main><div class="loading">${t("Caricamento…")}</div></main><div id="fab"></div><nav></nav></div>
       <div id="layer"></div>`;
     this.$header = this.shadowRoot.querySelector("header");
     this.$main = this.shadowRoot.querySelector("main");
@@ -312,14 +411,14 @@ class FinanzePanel extends HTMLElement {
   }
 
   _renderHeader() {
-    const title = VIEWS.find((v) => v[0] === this.view)?.[1] || "Finanze";
-    this.$header.innerHTML = `${this._narrow !== false ? `<button class="ib" data-a="menu" aria-label="Menu">${svg(ICON.menu)}</button>` : ""}
-      <div class="tt"><h1>${this.view === "home" ? "Finanze" : esc(title)}</h1>
-      <div class="who">${this.data?.user ? "Archivio di " + esc(this.data.user) : "Finanze personali"}</div></div>`;
+    const title = t(VIEWS.find((v) => v[0] === this.view)?.[1] || "Home");
+    this.$header.innerHTML = `${this._narrow !== false ? `<button class="ib" data-a="menu" aria-label="${t("Menu")}">${svg(ICON.menu)}</button>` : ""}
+      <div class="tt"><h1>${this.view === "home" ? "FinanceTracker" : esc(title)}</h1>
+      <div class="who">${this.data?.user ? t("Archivio di {0}", esc(this.data.user)) : t("Finanze personali")}</div></div>`;
   }
   _renderNav() {
     this.$nav.innerHTML = VIEWS.map(([k, label, p]) =>
-      `<button data-a="view" data-v="${k}" class="${this.view === k ? "on" : ""}">${svg(p)}<span>${label}</span></button>`).join("");
+      `<button data-a="view" data-v="${k}" class="${this.view === k ? "on" : ""}">${svg(p)}<span>${t(label)}</span></button>`).join("");
   }
 
   _renderMain() {
@@ -330,7 +429,7 @@ class FinanzePanel extends HTMLElement {
     const fn = { home: this._home, movimenti: this._movimenti, report: this._report, fisse: this._fisse, impostazioni: this._settings }[this.view];
     const layout = this.view === "movimenti" ? "wrap wide" : "wrap cols";
     this.$main.innerHTML = `<div class="${layout}">${fn.call(this)}</div>`;
-    this.$fab.innerHTML = ["home", "movimenti"].includes(this.view) ? `<button class="fab" data-a="add" aria-label="Aggiungi">${svg(ICON.plus)}</button>` : "";
+    this.$fab.innerHTML = ["home", "movimenti"].includes(this.view) ? `<button class="fab" data-a="add" aria-label="${t("Aggiungi")}">${svg(ICON.plus)}</button>` : "";
     if (keepScroll) this.$main.scrollTop = top;
   }
 
@@ -360,7 +459,7 @@ class FinanzePanel extends HTMLElement {
   _movRow(m) {
     const icoStyle = m.type === "trasferimento" ? "background:rgba(255,255,255,.07);color:rgba(255,255,255,.75)" : tint(m.category);
     const letter = `<ha-icon icon="${m.type === "trasferimento" ? "mdi:swap-horizontal" : catIcon(m.category)}"></ha-icon>`;
-    const title = m.description || m.category || TIPI[m.type];
+    const title = m.description || m.category || t(TIPI[m.type]);
     const sub = m.type === "trasferimento"
       ? `${esc(m.account)} → ${esc(m.to_account)}`
       : [m.category, m.account, m.method].filter(Boolean).map(esc).join(" · ");
@@ -373,7 +472,7 @@ class FinanzePanel extends HTMLElement {
   }
 
   _bars(rows, total, onTap) {
-    if (!rows.length) return `<div class="empty">Nessuna uscita</div>`;
+    if (!rows.length) return `<div class="empty">${t("Nessuna uscita")}</div>`;
     const max = rows[0].total || 1;
     return rows.map((r) => `<div style="padding:7px 0;${onTap ? "cursor:pointer" : ""}" ${onTap ? `data-a="${onTap}" data-k="${esc(r.name)}"` : ""}>
       <div class="row"><span class="grow ell">${esc(r.name)} <span class="sec">· ${r.n}</span></span>
@@ -386,12 +485,12 @@ class FinanzePanel extends HTMLElement {
       const late = r.next_due < today;
       return `<div class="duerow"><div class="row">
         <div class="ico" style="${tint(r.category)}"><ha-icon icon="${catIcon(r.category)}"></ha-icon></div>
-        <div class="grow"><div class="ell" style="font-weight:700">${esc(r.name)} ${r.to_verify ? '<span class="badge">da verificare</span>' : ""}</div>
-        <div class="sec">${late ? "Scaduta il " : "Scade il "}${dShort(r.next_due)}${r.account ? " · " + esc(r.account) : ""}</div></div>
+        <div class="grow"><div class="ell" style="font-weight:700">${esc(r.name)} ${r.to_verify ? `<span class="badge">${t("da verificare")}</span>` : ""}</div>
+        <div class="sec">${t(late ? "Scaduta il {0}" : "Scade il {0}", dShort(r.next_due))}${r.account ? " · " + esc(r.account) : ""}</div></div>
         <b>${eur(r.amount)}</b></div>
         <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px">
-          <button class="btn flat sm" data-a="rec-skip" data-id="${r.id}">Salta</button>
-          <button class="btn sm" data-a="rec-reg" data-id="${r.id}">Registra</button></div></div>`;
+          <button class="btn flat sm" data-a="rec-skip" data-id="${r.id}">${t("Salta")}</button>
+          <button class="btn sm" data-a="rec-reg" data-id="${r.id}">${t("Registra")}</button></div></div>`;
     }).join("");
   }
 
@@ -401,27 +500,27 @@ class FinanzePanel extends HTMLElement {
     const bal = balances(d);
     const total = Object.values(bal).reduce((a, b) => a + b, 0);
     const accs = d.accounts.filter((a) => !a.hidden || Math.abs(bal[a.name] || 0) > 0.004);
-    const mm = this._monthMovs(k), t = totals(mm);
+    const mm = this._monthMovs(k), tt = totals(mm);
     const due = d.recurring.filter((r) => recActive(r) && r.next_due <= today).sort((a, b) => a.next_due.localeCompare(b.next_due));
     const soon = d.recurring.filter((r) => recActive(r) && r.next_due > today && (parseD(r.next_due) - parseD(today)) / 864e5 <= 14)
       .sort((a, b) => a.next_due.localeCompare(b.next_due));
     const cats = groupSum(mm, "category").slice(0, 5);
     const last = [...this.movements].slice(-6).reverse();
-    const pct = t.entrate ? Math.min(100, (t.uscite / t.entrate) * 100) : (t.uscite ? 100 : 0);
+    const pct = tt.entrate ? Math.min(100, (tt.uscite / tt.entrate) * 100) : (tt.uscite ? 100 : 0);
     return `
-      <div class="card hero"><div class="row"><ha-icon icon="mdi:wallet-outline" style="color:var(--acc);--mdc-icon-size:22px"></ha-icon><span class="lbl">Saldo attuale</span></div>
+      <div class="card hero"><div class="row"><ha-icon icon="mdi:wallet-outline" style="color:var(--acc);--mdc-icon-size:22px"></ha-icon><span class="lbl">${t("Saldo attuale")}</span></div>
         <div class="big">${eur(total)}</div>
-        <div class="tiles">${accs.map((a) => tile(esc(a.name), eur(bal[a.name] || 0), (bal[a.name] || 0) < 0 ? "out" : "", "", a.name.toLowerCase() === "contanti" ? "mdi:cash" : "mdi:bank-outline")).join("")}</div></div>
-      ${due.length ? `<div class="card due">${hd("mdi:bell-ring-outline", "Spese fisse da registrare", due.length === 1 ? "1 scadenza" : due.length + " scadenze")}${this._dueRows(due, today)}</div>` : ""}
-      <div class="card">${hd("mdi:calendar-month-outline", ymLabel(k), t.n + " operazioni")}
-        <div class="kpi">${tile("Entrate", eur(t.entrate), "in")}${tile("Uscite", eur(t.uscite), "out")}${tile("Netto", eur(t.netto), t.netto < 0 ? "out" : "in")}</div>
+        <div class="tiles">${accs.map((a) => tile(esc(a.name), eur(bal[a.name] || 0), (bal[a.name] || 0) < 0 ? "out" : "", "", /^(contanti|cash)$/i.test(a.name) ? "mdi:cash" : "mdi:bank-outline")).join("")}</div></div>
+      ${due.length ? `<div class="card due">${hd("mdi:bell-ring-outline", t("Spese fisse da registrare"), due.length === 1 ? t("1 scadenza") : t("{0} scadenze", due.length))}${this._dueRows(due, today)}</div>` : ""}
+      <div class="card">${hd("mdi:calendar-month-outline", ymLabel(k), t("{0} operazioni", tt.n))}
+        <div class="kpi">${tile(t("Entrate"), eur(tt.entrate), "in")}${tile(t("Uscite"), eur(tt.uscite), "out")}${tile(t("Netto"), eur(tt.netto), tt.netto < 0 ? "out" : "in")}</div>
         <div class="bar" style="height:8px;margin-top:14px"><i style="width:${pct}%;${pct >= 100 ? "background:var(--out)" : ""}"></i></div>
-        <div class="sec" style="margin-top:6px">${t.entrate ? `Hai speso il ${Math.round((t.uscite / t.entrate) * 100)}% delle entrate del mese` : "Nessuna entrata registrata questo mese"}</div></div>
-      ${cats.length ? `<div class="card">${hd("mdi:chart-donut", "Dove vanno i soldi", "Uscite di " + MONTHS[Number(k.slice(5)) - 1].toLowerCase() + " · tocca per i dettagli")}${this._bars(cats, t.uscite, "cat-filter")}</div>` : ""}
-      ${soon.length ? `<div class="card">${hd("mdi:calendar-clock", "In arrivo", "Prossimi 14 giorni")}${soon.map((r) => `<div class="row" style="padding:6px 0">
+        <div class="sec" style="margin-top:6px">${tt.entrate ? t("Hai speso il {0}% delle entrate del mese", Math.round((tt.uscite / tt.entrate) * 100)) : t("Nessuna entrata registrata questo mese")}</div></div>
+      ${cats.length ? `<div class="card">${hd("mdi:chart-donut", t("Dove vanno i soldi"), t("Uscite di {0} · tocca per i dettagli", LANG === "it" ? monthName(Number(k.slice(5))) : cap(monthName(Number(k.slice(5))))))}${this._bars(cats, tt.uscite, "cat-filter")}</div>` : ""}
+      ${soon.length ? `<div class="card">${hd("mdi:calendar-clock", t("In arrivo"), t("Prossimi 14 giorni"))}${soon.map((r) => `<div class="row" style="padding:6px 0">
         <span class="grow ell">${esc(r.name)}</span><span class="sec">${dShort(r.next_due)}</span><b style="min-width:80px;text-align:right">${eur(r.amount)}</b></div>`).join("")}</div>` : ""}
-      <div class="card">${hd("mdi:history", "Ultimi movimenti", "", `<button class="pill" data-a="view" data-v="movimenti">Tutti<ha-icon icon="mdi:chevron-right"></ha-icon></button>`)}
-        <div class="list">${last.map((m) => this._movRow(m)).join("") || '<div class="empty">Ancora nessun movimento. Tocca + per iniziare.</div>'}</div></div>`;
+      <div class="card">${hd("mdi:history", t("Ultimi movimenti"), "", `<button class="pill" data-a="view" data-v="movimenti">${t("Tutti")}<ha-icon icon="mdi:chevron-right"></ha-icon></button>`)}
+        <div class="list">${last.map((m) => this._movRow(m)).join("") || `<div class="empty">${t("Ancora nessun movimento. Tocca + per iniziare.")}</div>`}</div></div>`;
   }
 
   /* -------------------------------------------------------------- MOVIMENTI */
@@ -432,7 +531,7 @@ class FinanzePanel extends HTMLElement {
       (!f.type || m.type === f.type) &&
       (!f.category || m.category === f.category) &&
       (!f.account || m.account === f.account || m.to_account === f.account) &&
-      (!q || `${m.description} ${m.category} ${m.note} ${m.method} ${m.account} ${String(m.amount).replace(".", ",")}`.toLowerCase().includes(q)));
+      (!q || `${m.description} ${m.category} ${m.note} ${m.method} ${m.account} ${fmtDec(m.amount)} ${m.amount}`.toLowerCase().includes(q)));
   }
   _movimenti() {
     const f = this.f;
@@ -440,32 +539,32 @@ class FinanzePanel extends HTMLElement {
     return `
       <div class="card" style="padding:12px">
         <div class="mbar"><button class="ib" data-a="m-prev" ${f.month === "all" ? "disabled" : ""}>${svg(ICON.left)}</button>
-          <b>${f.month === "all" ? "Tutti i mesi" : ymLabel(f.month)}</b>
+          <b>${f.month === "all" ? t("Tutti i mesi") : ymLabel(f.month)}</b>
           <button class="ib" data-a="m-next" ${f.month === "all" ? "disabled" : ""}>${svg(ICON.right)}</button></div>
-        <input type="search" placeholder="Cerca descrizione, categoria, importo…" data-f="search" value="${esc(f.search)}" style="margin:8px 0">
+        <input type="search" placeholder="${t("Cerca descrizione, categoria, importo…")}" data-f="search" value="${esc(f.search)}" style="margin:8px 0">
         <div class="chips">
           ${[["", "Tutti"], ["uscita", "Uscite"], ["entrata", "Entrate"], ["trasferimento", "Trasferimenti"]].map(([v, l]) =>
-            `<button class="chip ${f.type === v ? "on" : ""}" data-a="f-type" data-v="${v}">${l}</button>`).join("")}
-          <button class="chip ${f.month === "all" ? "on" : ""}" data-a="f-all">Tutti i mesi</button>
+            `<button class="chip ${f.type === v ? "on" : ""}" data-a="f-type" data-v="${v}">${t(l)}</button>`).join("")}
+          <button class="chip ${f.month === "all" ? "on" : ""}" data-a="f-all">${t("Tutti i mesi")}</button>
         </div>
         <div class="g2" style="margin-top:8px">
-          <select data-f="category"><option value="">Tutte le categorie</option>${cats.map((c) => `<option ${f.category === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
-          <select data-f="account"><option value="">Tutti i conti</option>${this._accounts().map((c) => `<option ${f.account === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+          <select data-f="category"><option value="">${t("Tutte le categorie")}</option>${cats.map((c) => `<option ${f.category === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+          <select data-f="account"><option value="">${t("Tutti i conti")}</option>${this._accounts().map((c) => `<option ${f.account === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
         </div>
       </div>
       <div id="mlist">${this._movList()}</div>`;
   }
   _movList() {
     const list = this._filtered();
-    const t = totals(list);
-    if (!list.length) return `<div class="card empty">Nessun movimento trovato</div>`;
+    const tt = totals(list);
+    if (!list.length) return `<div class="card empty">${t("Nessun movimento trovato")}</div>`;
     const byDay = new Map();
     for (const m of [...list].reverse()) { if (!byDay.has(m.date)) byDay.set(m.date, []); byDay.get(m.date).push(m); }
-    let html = `<div class="kpi">${tile("Entrate", eur(t.entrate), "in")}${tile("Uscite", eur(t.uscite), "out")}${tile("Movimenti", list.length)}</div>
+    let html = `<div class="kpi">${tile(t("Entrate"), eur(tt.entrate), "in")}${tile(t("Uscite"), eur(tt.uscite), "out")}${tile(t("Movimenti"), list.length)}</div>
       <div class="card" style="padding:4px 16px 8px;margin-top:12px">`;
     for (const [day, items] of byDay) {
       const d = parseD(day), dt = totals(items);
-      html += `<div class="day"><span>${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].toLowerCase()}${this.f.month === "all" ? " " + d.getFullYear() : ""}</span>
+      html += `<div class="day"><span>${dayLabel(d, this.f.month === "all")}</span>
         <span>${dt.uscite ? "−" + eur(dt.uscite) : ""}</span></div><div class="list">${items.map((m) => this._movRow(m)).join("")}</div>`;
     }
     return html + "</div>";
@@ -479,37 +578,36 @@ class FinanzePanel extends HTMLElement {
       list = this._monthMovs(r.month); label = ymLabel(r.month);
       months = Array.from({ length: 12 }, (_, i) => shiftYm(r.month, i - 11));
     } else {
-      list = this.movements.filter((m) => m.date.startsWith(String(r.year))); label = `Anno ${r.year}`;
+      list = this.movements.filter((m) => m.date.startsWith(String(r.year))); label = t("Anno {0}", r.year);
       months = Array.from({ length: 12 }, (_, i) => `${r.year}-${pad(i + 1)}`);
     }
     const first = this.movements.length ? ym(this.movements[0].date) : r.month;
     months = months.filter((k) => k >= first && k <= ym(d.today));
-    const t = totals(list);
+    const tt = totals(list);
     const cats = groupSum(list, "category");
     const meth = groupSum(list, "method");
     const accs = groupSum(list, "account");
-    const fixedCats = ["Mutuo", "Finanziamento", "Abbonamenti"];
-    const fixed = cats.filter((c) => fixedCats.includes(c.name));
+    const fixed = cats.filter((c) => FIXED_RE.test(c.name));
     const series = months.map((k) => ({ k, ...totals(this._monthMovs(k)) }));
-    const saving = t.entrate ? Math.round((t.netto / t.entrate) * 100) : null;
+    const saving = tt.entrate ? Math.round((tt.netto / tt.entrate) * 100) : null;
     return `
       <div class="card span" style="padding:12px">
-        <div class="seg"><button class="${r.mode === "mese" ? "on" : ""}" data-a="r-mode" data-v="mese">Mese</button>
-          <button class="${r.mode === "anno" ? "on" : ""}" data-a="r-mode" data-v="anno">Anno</button></div>
+        <div class="seg"><button class="${r.mode === "mese" ? "on" : ""}" data-a="r-mode" data-v="mese">${t("Mese")}</button>
+          <button class="${r.mode === "anno" ? "on" : ""}" data-a="r-mode" data-v="anno">${t("Anno")}</button></div>
         <div class="mbar" style="margin-top:8px"><button class="ib" data-a="r-prev">${svg(ICON.left)}</button><b>${label}</b>
           <button class="ib" data-a="r-next">${svg(ICON.right)}</button></div></div>
-      <div class="card">${hd("mdi:finance", label, t.n + " operazioni")}<div class="kpi">${tile("Entrate", eur(t.entrate), "in")}${tile("Uscite", eur(t.uscite), "out")}${tile("Netto", eur(t.netto), t.netto < 0 ? "out" : "in")}</div>
-        ${saving !== null ? `<div class="sec" style="margin-top:10px">Risparmio: ${saving}% delle entrate</div>` : ""}</div>
-      ${series.length > 1 ? `<div class="card chart">${hd("mdi:chart-bar", "Andamento mensile", "Entrate e uscite")}${this._chart(series)}
-        <div class="legend"><span><i style="background:var(--in)"></i>Entrate</span><span><i style="background:var(--out)"></i>Uscite</span></div>
-        <table style="margin-top:10px"><tr><th>Mese</th><th>Entrate</th><th>Uscite</th><th>Netto</th></tr>
-        ${[...series].reverse().map((s) => `<tr><td>${MONTHS_SHORT[Number(s.k.slice(5)) - 1]} ${s.k.slice(2, 4)}</td><td class="in">${eur0(s.entrate)}</td>
+      <div class="card">${hd("mdi:finance", label, t("{0} operazioni", tt.n))}<div class="kpi">${tile(t("Entrate"), eur(tt.entrate), "in")}${tile(t("Uscite"), eur(tt.uscite), "out")}${tile(t("Netto"), eur(tt.netto), tt.netto < 0 ? "out" : "in")}</div>
+        ${saving !== null ? `<div class="sec" style="margin-top:10px">${t("Risparmio: {0}% delle entrate", saving)}</div>` : ""}</div>
+      ${series.length > 1 ? `<div class="card chart">${hd("mdi:chart-bar", t("Andamento mensile"), t("Entrate e uscite"))}${this._chart(series)}
+        <div class="legend"><span><i style="background:var(--in)"></i>${t("Entrate")}</span><span><i style="background:var(--out)"></i>${t("Uscite")}</span></div>
+        <table style="margin-top:10px"><tr><th>${t("Mese")}</th><th>${t("Entrate")}</th><th>${t("Uscite")}</th><th>${t("Netto")}</th></tr>
+        ${[...series].reverse().map((s) => `<tr><td>${monthShort(Number(s.k.slice(5)))} ${s.k.slice(2, 4)}</td><td class="in">${eur0(s.entrate)}</td>
           <td class="out">${eur0(s.uscite)}</td><td class="${s.netto < 0 ? "out" : "in"}">${eur0(s.netto)}</td></tr>`).join("")}</table></div>` : ""}
-      <div class="card">${hd("mdi:shape-outline", "Uscite per categoria", "Tocca per i dettagli")}${this._bars(cats, t.uscite, "cat-filter-rep")}</div>
-      ${fixed.length ? `<div class="card">${hd("mdi:calendar-sync", "Mutuo, finanziamenti, abbonamenti", eur(fixed.reduce((a, b) => a + b.total, 0)))}${this._bars(fixed, t.uscite)}</div>` : ""}
-      <div class="card">${hd("mdi:credit-card-outline", "Per metodo di pagamento")}${this._bars(meth, t.uscite)}</div>
-      <div class="card">${hd("mdi:bank-outline", "Per conto")}${this._bars(accs, t.uscite)}</div>
-      <div class="sec" style="padding:0 4px">I trasferimenti tra conti (prelievi, conto deposito) non contano né come entrate né come uscite.</div>`;
+      <div class="card">${hd("mdi:shape-outline", t("Uscite per categoria"), t("Tocca per i dettagli"))}${this._bars(cats, tt.uscite, "cat-filter-rep")}</div>
+      ${fixed.length ? `<div class="card">${hd("mdi:calendar-sync", t("Mutuo, finanziamenti, abbonamenti"), eur(fixed.reduce((a, b) => a + b.total, 0)))}${this._bars(fixed, tt.uscite)}</div>` : ""}
+      <div class="card">${hd("mdi:credit-card-outline", t("Per metodo di pagamento"))}${this._bars(meth, tt.uscite)}</div>
+      <div class="card">${hd("mdi:bank-outline", t("Per conto"))}${this._bars(accs, tt.uscite)}</div>
+      <div class="sec" style="padding:0 4px">${t("I trasferimenti tra conti (prelievi, conto deposito) non contano né come entrate né come uscite.")}</div>`;
   }
   _chart(series) {
     const W = 340, H = 150, pl = 4, pb = 18, n = series.length;
@@ -521,7 +619,7 @@ class FinanzePanel extends HTMLElement {
       const he = ((H - pb - 6) * s.entrate) / max, hu = ((H - pb - 6) * s.uscite) / max;
       g += `<rect x="${x - bw - 1}" y="${H - pb - he}" width="${bw}" height="${he}" rx="2" fill="var(--in)"/>
         <rect x="${x + 1}" y="${H - pb - hu}" width="${bw}" height="${hu}" rx="2" fill="var(--out)"/>
-        <text x="${x}" y="${H - 5}" text-anchor="middle">${MONTHS_SHORT[Number(s.k.slice(5)) - 1]}</text>`;
+        <text x="${x}" y="${H - 5}" text-anchor="middle">${monthShort(Number(s.k.slice(5)))}</text>`;
     });
     return `<svg viewBox="0 0 ${W} ${H}" role="img"><line x1="0" x2="${W}" y1="${H - pb}" y2="${H - pb}" stroke="var(--line)"/>${g}</svg>`;
   }
@@ -533,22 +631,23 @@ class FinanzePanel extends HTMLElement {
     const ended = d.recurring.filter((r) => !recActive(r));
     const monthly = active.reduce((a, r) => a + r.amount / (r.cadence_months || 1), 0);
     const byCat = new Map();
-    for (const r of active) byCat.set(r.category || "Altro", (byCat.get(r.category || "Altro") || 0) + r.amount / (r.cadence_months || 1));
+    const other = LANG === "it" ? "Altro" : "Other";
+    for (const r of active) byCat.set(r.category || other, (byCat.get(r.category || other) || 0) + r.amount / (r.cadence_months || 1));
     const due = active.filter((r) => r.next_due <= today);
     const row = (r) => `<div class="item" data-a="rec-edit" data-id="${r.id}">
       <div class="ico" style="${tint(r.category)}"><ha-icon icon="${catIcon(r.category)}"></ha-icon></div>
-      <div class="grow"><div class="ell">${esc(r.name)} ${r.to_verify ? '<span class="badge">da verificare</span>' : ""}</div>
-        <div class="sec ell">${CADENZE[r.cadence_months] || r.cadence_months + " mesi"} · ${recActive(r) ? `prossima ${dShort(r.next_due)}` : "terminata"}${r.end_date && recActive(r) ? ` · fino a ${MONTHS_SHORT[parseD(r.end_date).getMonth()]} ${parseD(r.end_date).getFullYear()}` : ""}</div></div>
+      <div class="grow"><div class="ell">${esc(r.name)} ${r.to_verify ? `<span class="badge">${t("da verificare")}</span>` : ""}</div>
+        <div class="sec ell">${CADENZE[r.cadence_months] ? t(CADENZE[r.cadence_months]) : t("{0} mesi", r.cadence_months)} · ${recActive(r) ? t("prossima {0}", dShort(r.next_due)) : t("terminata")}${r.end_date && recActive(r) ? " · " + t("fino a {0}", `${monthShort(parseD(r.end_date).getMonth() + 1)} ${parseD(r.end_date).getFullYear()}`) : ""}</div></div>
       <div class="amt">${eur(r.amount)}</div></div>`;
     return `
-      <div class="card hero"><div class="row"><ha-icon icon="mdi:calendar-sync" style="color:var(--acc);--mdc-icon-size:22px"></ha-icon><span class="lbl">Totale mensile</span></div>
+      <div class="card hero"><div class="row"><ha-icon icon="mdi:calendar-sync" style="color:var(--acc);--mdc-icon-size:22px"></ha-icon><span class="lbl">${t("Totale mensile")}</span></div>
         <div class="big">${eur(monthly)}</div>
         <div class="tiles">${[...byCat].sort((a, b) => b[1] - a[1]).map(([k, v]) => tile(esc(k), eur(v), "", "", catIcon(k))).join("")}</div>
-        <div class="sec" style="margin-top:10px">Le spese annuali o trimestrali sono ripartite al mese.</div></div>
-      ${due.length ? `<div class="card due">${hd("mdi:bell-ring-outline", "Da registrare")}${this._dueRows(due, today)}</div>` : ""}
-      <div class="card">${hd("mdi:calendar-sync", "Attive", active.length + " spese", `<button class="pill on" data-a="rec-new"><ha-icon icon="mdi:plus"></ha-icon>Aggiungi</button>`)}
-        <div class="list">${active.map(row).join("") || '<div class="empty">Nessuna spesa fissa</div>'}</div></div>
-      ${ended.length ? `<div class="card">${hd("mdi:calendar-check-outline", "Terminate", ended.length + " spese")}<div class="list">${ended.map(row).join("")}</div></div>` : ""}`;
+        <div class="sec" style="margin-top:10px">${t("Le spese annuali o trimestrali sono ripartite al mese.")}</div></div>
+      ${due.length ? `<div class="card due">${hd("mdi:bell-ring-outline", t("Da registrare"))}${this._dueRows(due, today)}</div>` : ""}
+      <div class="card">${hd("mdi:calendar-sync", t("Attive"), t("{0} spese", active.length), `<button class="pill on" data-a="rec-new"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi")}</button>`)}
+        <div class="list">${active.map(row).join("") || `<div class="empty">${t("Nessuna spesa fissa")}</div>`}</div></div>
+      ${ended.length ? `<div class="card">${hd("mdi:calendar-check-outline", t("Terminate"), t("{0} spese", ended.length))}<div class="list">${ended.map(row).join("")}</div></div>` : ""}`;
   }
 
   /* ---------------------------------------------------------- IMPOSTAZIONI */
@@ -568,34 +667,34 @@ class FinanzePanel extends HTMLElement {
     const s = this.settingsDraft;
     const used = (key, v) => this.movements.filter((m) => m[key] === v || (key === "account" && m.to_account === v)).length +
       d.recurring.filter((r) => r[key] === v).length;
-    const listEd = (key, field, title) => `<div class="card">${hd(key === "categories" ? "mdi:shape-outline" : "mdi:credit-card-outline", title, "", `<button class="pill" data-a="s-add" data-k="${key}"><ha-icon icon="mdi:plus"></ha-icon>Aggiungi</button>`)}
-      ${s[key].map((c, i) => { const n = c.orig ? used(field, c.orig) : 0; return `<div class="ed two"><input data-s="${key}" data-i="${i}" data-p="name" value="${esc(c.name)}" placeholder="Nome">
-        <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="${key}" data-i="${i}" ${n ? `disabled title="Usata in ${n} movimenti"` : ""} aria-label="Elimina">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}</div>`;
+    const listEd = (key, field, title) => `<div class="card">${hd(key === "categories" ? "mdi:shape-outline" : "mdi:credit-card-outline", title, "", `<button class="pill" data-a="s-add" data-k="${key}"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi")}</button>`)}
+      ${s[key].map((c, i) => { const n = c.orig ? used(field, c.orig) : 0; return `<div class="ed two"><input data-s="${key}" data-i="${i}" data-p="name" value="${esc(c.name)}" placeholder="${t("Nome")}">
+        <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="${key}" data-i="${i}" ${n ? `disabled title="${t("Usata in {0} movimenti", n)}"` : ""} aria-label="${t("Elimina")}">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}</div>`;
     return `
-      <div class="card">${hd("mdi:bank-outline", "Conti", "Nome e saldo iniziale", `<button class="pill" data-a="s-add" data-k="accounts"><ha-icon icon="mdi:plus"></ha-icon>Aggiungi</button>`)}
-        <div class="ed sec" style="font-size:12px"><span>Nome</span><span>Saldo iniziale</span><span></span></div>
-        ${s.accounts.map((a, i) => { const n = a.orig ? used("account", a.orig) : 0; return `<div class="ed"><input data-s="accounts" data-i="${i}" data-p="name" value="${esc(a.name)}" placeholder="Nome conto">
-          <input data-s="accounts" data-i="${i}" data-p="initial_balance" inputmode="decimal" value="${esc(String(a.initial_balance ?? 0).replace(".", ","))}">
-          <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="accounts" data-i="${i}" ${n ? "disabled" : ""} aria-label="Elimina">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}
-        <div class="sec">Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.</div></div>
-      ${listEd("categories", "category", "Categorie")}
-      ${listEd("methods", "method", "Metodi di pagamento")}
-      <div class="row span" style="justify-content:flex-end;gap:8px"><button class="btn flat" data-a="s-reset">Annulla modifiche</button><button class="btn" data-a="s-save">Salva impostazioni</button></div>
-      <div class="card">${hd("mdi:database-outline", "Dati", "Import, export e backup")}
-        <div class="sec" style="margin-bottom:10px">I dati sono salvati in Home Assistant (cartella <code>.storage</code>) e inclusi nei backup.</div>
-        <div class="chips"><button class="chip" data-a="export-json">Esporta backup (JSON)</button><button class="chip" data-a="export-csv">Esporta movimenti (CSV)</button>
-          <button class="chip" data-a="import" data-v="merge">Importa e aggiungi…</button>
-          <button class="chip danger" data-a="import" data-v="replace">Importa e sostituisci tutto…</button></div>
-        <div class="sec" style="margin-top:8px">Per il primo avvio usa «sostituisci tutto» con il file <code>finanze_import.json</code>.</div>
+      <div class="card">${hd("mdi:bank-outline", t("Conti"), t("Nome e saldo iniziale"), `<button class="pill" data-a="s-add" data-k="accounts"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi")}</button>`)}
+        <div class="ed sec" style="font-size:12px"><span>${t("Nome")}</span><span>${t("Saldo iniziale")}</span><span></span></div>
+        ${s.accounts.map((a, i) => { const n = a.orig ? used("account", a.orig) : 0; return `<div class="ed"><input data-s="accounts" data-i="${i}" data-p="name" value="${esc(a.name)}" placeholder="${t("Nome conto")}">
+          <input data-s="accounts" data-i="${i}" data-p="initial_balance" inputmode="decimal" value="${esc(String(Number(a.initial_balance ?? 0)).replace(".", DEC))}">
+          <button class="ib ${n ? "" : "danger"}" data-a="s-del" data-k="accounts" data-i="${i}" ${n ? "disabled" : ""} aria-label="${t("Elimina")}">${n ? `<span class="sec" style="font-size:12px">${n}</span>` : svg(ICON.del)}</button></div>`; }).join("")}
+        <div class="sec">${t("Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.")}</div></div>
+      ${listEd("categories", "category", t("Categorie"))}
+      ${listEd("methods", "method", t("Metodi di pagamento"))}
+      <div class="row span" style="justify-content:flex-end;gap:8px"><button class="btn flat" data-a="s-reset">${t("Annulla modifiche")}</button><button class="btn" data-a="s-save">${t("Salva impostazioni")}</button></div>
+      <div class="card">${hd("mdi:database-outline", t("Dati"), t("Import, export e backup"))}
+        <div class="sec" style="margin-bottom:10px">${t("I dati sono salvati in Home Assistant (cartella <code>.storage</code>) e inclusi nei backup.")}</div>
+        <div class="chips"><button class="chip" data-a="export-json">${t("Esporta backup (JSON)")}</button><button class="chip" data-a="export-csv">${t("Esporta movimenti (CSV)")}</button>
+          <button class="chip" data-a="import" data-v="merge">${t("Importa e aggiungi…")}</button>
+          <button class="chip danger" data-a="import" data-v="replace">${t("Importa e sostituisci tutto…")}</button></div>
+        <div class="sec" style="margin-top:8px">${t("Per il primo avvio usa «sostituisci tutto» con il file da importare.")}</div>
         <input type="file" id="file" accept=".json,application/json" style="display:none"></div>
-      <div class="card">${hd("mdi:bell-outline", "Promemoria spese fisse", "Dispositivi su cui ricevi le notifiche")}
-        ${this._targets ? (this._targets.length ? `<div class="chips">${this._targets.map((t) => `<button class="chip ${(d.settings?.notify_services || []).includes(t) ? "on" : ""}" data-a="p-notify" data-v="${esc(t)}">${esc(t.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " "))}</button>`).join("")}</div>` : '<div class="sec">Nessun dispositivo di notifica trovato.</div>') : '<div class="sec">Caricamento…</div>'}
-        <div class="sec" style="margin-top:10px">L'orario si imposta in Impostazioni → Dispositivi e servizi → Finanze → Configura.</div></div>
-      <div class="card">${hd("mdi:chart-box-outline", "Sensori in Home Assistant", "Saldo, entrate e uscite come entità")}
-        <div class="row"><div class="grow sec">Crea i sensori <code>sensor.finanze_${esc((d.user || "").toLowerCase().replace(/[^a-z0-9]+/g, "_"))}_…</code> da usare nelle tue dashboard e automazioni.
-          <b style="color:var(--acc)">Attenzione:</b> le entità di Home Assistant sono visibili a tutti gli utenti.</div>
-          <button class="sw ${d.settings?.sensors ? "on" : ""}" data-a="p-sensors" aria-label="Sensori"></button></div></div>
-      <div class="sec" style="text-align:center">Finanze ${esc(d.version || "")} · ${this.movements.length} movimenti</div>`;
+      <div class="card">${hd("mdi:bell-outline", t("Promemoria spese fisse"), t("Dispositivi su cui ricevi le notifiche"))}
+        ${this._targets ? (this._targets.length ? `<div class="chips">${this._targets.map((t) => `<button class="chip ${(d.settings?.notify_services || []).includes(t) ? "on" : ""}" data-a="p-notify" data-v="${esc(t)}">${esc(t.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " "))}</button>`).join("")}</div>` : `<div class="sec">${t("Nessun dispositivo di notifica trovato.")}</div>`) : `<div class="sec">${t("Caricamento…")}</div>`}
+        <div class="sec" style="margin-top:10px">${t("L'orario si imposta in Impostazioni → Dispositivi e servizi → FinanceTracker → Configura.")}</div></div>
+      <div class="card">${hd("mdi:chart-box-outline", t("Sensori in Home Assistant"), t("Saldo, entrate e uscite come entità"))}
+        <div class="row"><div class="grow sec">${t("Crea i sensori di FinanceTracker da usare nelle tue dashboard e automazioni.")}
+          <b style="color:var(--acc)">${t("Attenzione:")}</b> ${t("le entità di Home Assistant sono visibili a tutti gli utenti.")}</div>
+          <button class="sw ${d.settings?.sensors ? "on" : ""}" data-a="p-sensors" aria-label="${t("Sensori")}"></button></div></div>
+      <div class="sec" style="text-align:center">FinanceTracker ${esc(d.version || "")} · ${t("{0} movimenti", this.movements.length)}</div>`;
   }
 
   /* ----------------------------------------------------------------- SHEETS */
@@ -605,7 +704,7 @@ class FinanzePanel extends HTMLElement {
     const accs = this._accounts();
     this.sheet = {
       kind: "mov", id: m?.id || null, confirm: false,
-      draft: m ? { ...m, amount: Number(m.amount).toFixed(2).replace(".", ",") } : {
+      draft: m ? { ...m, amount: fmtDec(m.amount) } : {
         type, amount: "", date: this.data.today, description: "", category: "", note: "",
         account: last?.account || accs[0] || "", method: last?.method || "",
         to_account: accs.find((a) => a !== (last?.account || accs[0])) || "",
@@ -617,8 +716,10 @@ class FinanzePanel extends HTMLElement {
     const accs = this._accounts();
     this.sheet = {
       kind: "rec", id: r?.id || null, confirm: false,
-      draft: r ? { ...r, amount: Number(r.amount).toFixed(2).replace(".", ",") } : {
-        name: "", amount: "", category: "Abbonamenti", cadence_months: 1, method: "Addebito diretto",
+      draft: r ? { ...r, amount: fmtDec(r.amount) } : {
+        name: "", amount: "", cadence_months: 1,
+        category: this.data.categories.find((c) => /abbonament|subscription/i.test(c)) || this.data.categories[0] || "",
+        method: this.data.methods.find((c) => /addebito|direct debit/i.test(c)) || "",
         account: accs[0] || "", next_due: this.data.today, end_date: "", active: true,
       },
     };
@@ -659,50 +760,50 @@ class FinanzePanel extends HTMLElement {
       seen.add(key); sugg.push(m);
     }
     const accOpts = (sel) => accs.map((a) => `<option ${a === sel ? "selected" : ""}>${esc(a)}</option>`).join("");
-    return `<div class="hd"><div class="ico"><ha-icon icon="${s.id ? "mdi:pencil-outline" : "mdi:plus"}"></ha-icon></div><h3>${s.id ? "Modifica movimento" : "Nuovo movimento"}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
+    return `<div class="hd"><div class="ico"><ha-icon icon="${s.id ? "mdi:pencil-outline" : "mdi:plus"}"></ha-icon></div><h3>${t(s.id ? "Modifica movimento" : "Nuovo movimento")}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
       <div class="bd">
-        <div class="seg">${Object.entries(TIPI).map(([k, l]) => `<button class="${d.type === k ? "on" : ""}" data-a="d-type" data-v="${k}">${l}</button>`).join("")}</div>
-        <input class="amount ${d.type === "entrata" ? "in" : d.type === "uscita" ? "out" : ""}" data-d="amount" inputmode="decimal" placeholder="0,00 €" value="${esc(d.amount)}" autocomplete="off">
-        <label class="f">Descrizione<input data-d="description" value="${esc(d.description)}" placeholder="${d.type === "trasferimento" ? "Es. Prelievo bancomat" : "Es. Coop, Netflix, Stipendio…"}" autocomplete="off"></label>
+        <div class="seg">${Object.entries(TIPI).map(([k, l]) => `<button class="${d.type === k ? "on" : ""}" data-a="d-type" data-v="${k}">${t(l)}</button>`).join("")}</div>
+        <input class="amount ${d.type === "entrata" ? "in" : d.type === "uscita" ? "out" : ""}" data-d="amount" inputmode="decimal" placeholder="${eur(0)}" value="${esc(d.amount)}" autocomplete="off">
+        <label class="f">${t("Descrizione")}<input data-d="description" value="${esc(d.description)}" placeholder="${t(d.type === "trasferimento" ? "Es. Prelievo bancomat" : "Es. Coop, Netflix, Stipendio…")}" autocomplete="off"></label>
         ${sugg.length ? `<div class="sugg">${sugg.map((m) => `<button class="chip" data-a="d-sugg" data-id="${m.id}">${esc(m.description)}</button>`).join("")}</div>` : ""}
-        ${d.type === "trasferimento" ? `<div class="g2"><label class="f">Da conto<select data-d="account">${accOpts(d.account)}</select></label>
-            <label class="f">A conto<select data-d="to_account">${accOpts(d.to_account)}</select></label></div>`
-        : `<div><div class="lbl" style="margin-bottom:6px">Categoria</div><div class="chips" id="cats">${(s.allCats ? cats : cats.slice(0, 8).concat(d.category && cats.indexOf(d.category) >= 8 ? [d.category] : [])).map((c) =>
+        ${d.type === "trasferimento" ? `<div class="g2"><label class="f">${t("Da conto")}<select data-d="account">${accOpts(d.account)}</select></label>
+            <label class="f">${t("A conto")}<select data-d="to_account">${accOpts(d.to_account)}</select></label></div>`
+        : `<div><div class="lbl" style="margin-bottom:6px">${t("Categoria")}</div><div class="chips" id="cats">${(s.allCats ? cats : cats.slice(0, 8).concat(d.category && cats.indexOf(d.category) >= 8 ? [d.category] : [])).map((c) =>
             `<button class="chip ${d.category === c ? "on" : ""}" data-a="d-cat" data-v="${esc(c)}">${esc(c)}</button>`).join("")}
-            ${cats.length > 8 ? `<button class="chip" data-a="d-allcats">${s.allCats ? "Meno" : `Altre ${cats.length - 8}…`}</button>` : ""}
-            <button class="chip" data-a="d-newcat">+ Nuova</button></div>
-            ${s.newCat ? `<div class="row" style="margin-top:8px"><input data-d="_newcat" placeholder="Nome nuova categoria" value="${esc(d._newcat || "")}">
-              <button class="btn sm" data-a="d-newcat-ok">Aggiungi</button></div>` : ""}</div>
-          <div class="g2"><label class="f">Conto<select data-d="account">${accOpts(d.account)}</select></label>
-            <label class="f">Metodo<select data-d="method"><option value="">—</option>${this.data.methods.map((x) => `<option ${x === d.method ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>`}
-        <div><div class="lbl" style="margin-bottom:6px">Data</div><div class="row">
-          <button class="chip ${d.date === this.data.today ? "on" : ""}" data-a="d-date" data-v="${this.data.today}">Oggi</button>
-          <button class="chip ${d.date === yesterday ? "on" : ""}" data-a="d-date" data-v="${yesterday}">Ieri</button>
+            ${cats.length > 8 ? `<button class="chip" data-a="d-allcats">${s.allCats ? t("Meno") : t("Altre {0}…", cats.length - 8)}</button>` : ""}
+            <button class="chip" data-a="d-newcat">${t("+ Nuova")}</button></div>
+            ${s.newCat ? `<div class="row" style="margin-top:8px"><input data-d="_newcat" placeholder="${t("Nome nuova categoria")}" value="${esc(d._newcat || "")}">
+              <button class="btn sm" data-a="d-newcat-ok">${t("Aggiungi")}</button></div>` : ""}</div>
+          <div class="g2"><label class="f">${t("Conto")}<select data-d="account">${accOpts(d.account)}</select></label>
+            <label class="f">${t("Metodo")}<select data-d="method"><option value="">—</option>${this.data.methods.map((x) => `<option ${x === d.method ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>`}
+        <div><div class="lbl" style="margin-bottom:6px">${t("Data")}</div><div class="row">
+          <button class="chip ${d.date === this.data.today ? "on" : ""}" data-a="d-date" data-v="${this.data.today}">${t("Oggi")}</button>
+          <button class="chip ${d.date === yesterday ? "on" : ""}" data-a="d-date" data-v="${yesterday}">${t("Ieri")}</button>
           <input type="date" data-d="date" value="${esc(d.date)}" style="flex:1"></div></div>
-        <label class="f">Note<input data-d="note" value="${esc(d.note)}" placeholder="Facoltative, es. Da rimborsare"></label>
+        <label class="f">${t("Note")}<input data-d="note" value="${esc(d.note)}" placeholder="${t("Facoltative, es. Da rimborsare")}"></label>
       </div>
-      <div class="ft">${s.id ? `<button class="btn ${s.confirm ? "warn" : "flat danger"}" data-a="mov-del">${s.confirm ? "Conferma eliminazione" : "Elimina"}</button>` : ""}
-        <button class="btn" data-a="mov-save">${s.id ? "Salva modifiche" : "Aggiungi"}</button></div>`;
+      <div class="ft">${s.id ? `<button class="btn ${s.confirm ? "warn" : "flat danger"}" data-a="mov-del">${t(s.confirm ? "Conferma eliminazione" : "Elimina")}</button>` : ""}
+        <button class="btn" data-a="mov-save">${t(s.id ? "Salva modifiche" : "Aggiungi")}</button></div>`;
   }
 
   _recForm(s) {
     const d = s.draft;
-    return `<div class="hd"><div class="ico"><ha-icon icon="mdi:calendar-sync"></ha-icon></div><h3>${s.id ? "Spesa fissa" : "Nuova spesa fissa"}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
+    return `<div class="hd"><div class="ico"><ha-icon icon="mdi:calendar-sync"></ha-icon></div><h3>${t(s.id ? "Spesa fissa" : "Nuova spesa fissa")}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
       <div class="bd">
-        <label class="f">Nome<input data-d="name" value="${esc(d.name)}" placeholder="Es. Netflix"></label>
-        <div class="g2"><label class="f">Importo (€)<input data-d="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
-          <label class="f">Cadenza<select data-d="cadence_months">${Object.entries(CADENZE).map(([k, l]) => `<option value="${k}" ${Number(d.cadence_months) === Number(k) ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
-        <div class="g2"><label class="f">Categoria<select data-d="category">${this._catFreq("uscita").map((c) => `<option ${c === d.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
-          <label class="f">Metodo<select data-d="method"><option value="">—</option>${this.data.methods.map((x) => `<option ${x === d.method ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>
-        <label class="f">Conto<select data-d="account">${this._accounts().map((a) => `<option ${a === d.account ? "selected" : ""}>${esc(a)}</option>`).join("")}</select></label>
-        <div class="g2"><label class="f">Prossima scadenza<input type="date" data-d="next_due" value="${esc(d.next_due || "")}"></label>
-          <label class="f">Ultima rata (facoltativa)<input type="date" data-d="end_date" value="${esc(d.end_date || "")}"></label></div>
-        <label class="row" style="font-size:15px"><input type="checkbox" data-d="active" ${d.active !== false ? "checked" : ""} style="width:22px;height:22px;-webkit-appearance:checkbox;appearance:auto"> Attiva</label>
-        ${d.to_verify ? '<div class="sec"><span class="badge">da verificare</span> Non ho trovato pagamenti di questa spesa nei movimenti importati: controlla la data della prossima scadenza.</div>' : ""}
+        <label class="f">${t("Nome")}<input data-d="name" value="${esc(d.name)}" placeholder="${t("Es. Netflix")}"></label>
+        <div class="g2"><label class="f">${t("Importo (€)")}<input data-d="amount" inputmode="decimal" value="${esc(d.amount)}"></label>
+          <label class="f">${t("Cadenza")}<select data-d="cadence_months">${Object.entries(CADENZE).map(([k, l]) => `<option value="${k}" ${Number(d.cadence_months) === Number(k) ? "selected" : ""}>${t(l)}</option>`).join("")}</select></label></div>
+        <div class="g2"><label class="f">${t("Categoria")}<select data-d="category">${this._catFreq("uscita").map((c) => `<option ${c === d.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+          <label class="f">${t("Metodo")}<select data-d="method"><option value="">—</option>${this.data.methods.map((x) => `<option ${x === d.method ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>
+        <label class="f">${t("Conto")}<select data-d="account">${this._accounts().map((a) => `<option ${a === d.account ? "selected" : ""}>${esc(a)}</option>`).join("")}</select></label>
+        <div class="g2"><label class="f">${t("Prossima scadenza")}<input type="date" data-d="next_due" value="${esc(d.next_due || "")}"></label>
+          <label class="f">${t("Ultima rata (facoltativa)")}<input type="date" data-d="end_date" value="${esc(d.end_date || "")}"></label></div>
+        <label class="row" style="font-size:15px"><input type="checkbox" data-d="active" ${d.active !== false ? "checked" : ""} style="width:22px;height:22px;-webkit-appearance:checkbox;appearance:auto"> ${t("Attiva")}</label>
+        ${d.to_verify ? `<div class="sec"><span class="badge">${t("da verificare")}</span> ${t("Non ho trovato pagamenti di questa spesa nei movimenti importati: controlla la data della prossima scadenza.")}</div>` : ""}
       </div>
-      <div class="ft">${s.id ? `<button class="btn ${s.confirm ? "warn" : "flat danger"}" data-a="rec-del">${s.confirm ? "Conferma" : "Elimina"}</button>
-        <button class="btn flat" data-a="rec-reg-now" data-id="${s.id}">Registra ora</button>` : ""}
-        <button class="btn" data-a="rec-save">Salva</button></div>`;
+      <div class="ft">${s.id ? `<button class="btn ${s.confirm ? "warn" : "flat danger"}" data-a="rec-del">${t(s.confirm ? "Conferma" : "Elimina")}</button>
+        <button class="btn flat" data-a="rec-reg-now" data-id="${s.id}">${t("Registra ora")}</button>` : ""}
+        <button class="btn" data-a="rec-save">${t("Salva")}</button></div>`;
   }
 
   /* ----------------------------------------------------------------- eventi */
@@ -757,27 +858,27 @@ class FinanzePanel extends HTMLElement {
         case "d-sugg": {
           const m = this.movements.find((x) => x.id === id);
           if (m) Object.assign(s.draft, { description: m.description, category: m.category, account: m.account, method: m.method, to_account: m.to_account || s.draft.to_account });
-          if (m && !s.draft.amount && /abbonament|finanziament|mutuo/i.test(m.category)) s.draft.amount = Number(m.amount).toFixed(2).replace(".", ",");
+          if (m && !s.draft.amount && FIXED_RE.test(m.category)) s.draft.amount = fmtDec(m.amount);
           this._renderSheet(); break;
         }
         case "mov-save": await this._saveMovement(); break;
         case "mov-del":
           if (!s.confirm) { s.confirm = true; this._renderSheet(); break; }
-          await this.ws("finanze/movement/delete", { id_movimento: s.id }); this._closeSheet(); this.toast("Movimento eliminato"); break;
+          await this.ws("finanze/movement/delete", { id_movimento: s.id }); this._closeSheet(); this.toast(t("Movimento eliminato")); break;
         // spese fisse
         case "rec-new": this._openRecurring(null); break;
         case "rec-edit": this._openRecurring(this.data.recurring.find((r) => r.id === id)); break;
         case "rec-save": await this._saveRecurring(); break;
         case "rec-del":
           if (!s.confirm) { s.confirm = true; this._renderSheet(); break; }
-          await this.ws("finanze/recurring/delete", { id_spesa: s.id }); this._closeSheet(); this.toast("Spesa fissa eliminata"); break;
+          await this.ws("finanze/recurring/delete", { id_spesa: s.id }); this._closeSheet(); this.toast(t("Spesa fissa eliminata")); break;
         case "rec-reg": case "rec-reg-now": {
           el.disabled = true;
           const m = await this.ws("finanze/recurring/register", { id_spesa: id, ...(a === "rec-reg-now" ? { date: this.data.today } : {}) });
           if (a === "rec-reg-now") this._closeSheet();
-          this.toast(`Registrata: ${m.description} ${eur(m.amount)}`); break;
+          this.toast(t("Registrata: {0} {1}", m.description, eur(m.amount))); break;
         }
-        case "rec-skip": el.disabled = true; await this.ws("finanze/recurring/skip", { id_spesa: id }); this.toast("Scadenza saltata"); break;
+        case "rec-skip": el.disabled = true; await this.ws("finanze/recurring/skip", { id_spesa: id }); this.toast(t("Scadenza saltata")); break;
         // impostazioni
         case "s-add": this.settingsDraft[el.dataset.k].push(el.dataset.k === "accounts" ? { name: "", initial_balance: 0 } : { name: "" }); this._keepScroll = true; this._renderMain(); break;
         case "s-del": this.settingsDraft[el.dataset.k].splice(Number(el.dataset.i), 1); this._keepScroll = true; this._renderMain(); break;
@@ -789,16 +890,16 @@ class FinanzePanel extends HTMLElement {
           this._keepScroll = true;
           await this.ws("finanze/prefs/save", { notify_services: [...cur] });
           const dev = v.replace("notify.", "").replace("mobile_app_", "").replace(/_/g, " ");
-          this.toast(cur.has(v) ? `Notifiche attive su ${dev}` : `Notifiche disattivate su ${dev}`); break;
+          this.toast(t(cur.has(v) ? "Notifiche attive su {0}" : "Notifiche disattivate su {0}", dev)); break;
         }
         case "p-sensors": {
           const on = !this.data.settings?.sensors;
           this._keepScroll = true;
           await this.ws("finanze/prefs/save", { sensors: on });
-          this.toast(on ? "Sensori creati" : "Sensori rimossi"); break;
+          this.toast(t(on ? "Sensori creati" : "Sensori rimossi")); break;
         }
-        case "export-json": this._download(`finanze-${this.data.today}.json`, JSON.stringify(await this.ws("finanze/export"), null, 1), "application/json"); break;
-        case "export-csv": this._download(`finanze-movimenti-${this.data.today}.csv`, this._csv(), "text/csv"); break;
+        case "export-json": this._download(`financetracker-${this.data.today}.json`, JSON.stringify(await this.ws("finanze/export"), null, 1), "application/json"); break;
+        case "export-csv": this._download(`financetracker-${t("Movimenti").toLowerCase()}-${this.data.today}.csv`, this._csv(), "text/csv"); break;
         case "import": this._importMode = v; this.shadowRoot.getElementById("file").click(); break;
       }
     } catch (err) {
@@ -844,26 +945,26 @@ class FinanzePanel extends HTMLElement {
   async _saveMovement() {
     const s = this.sheet, d = s.draft;
     const amount = num(d.amount);
-    if (!(amount > 0)) { this.toast("Inserisci un importo"); this.$layer.querySelector(".amount")?.focus(); return; }
-    if (d.type !== "trasferimento" && !d.category) { this.toast("Scegli una categoria"); return; }
-    if (d.type === "trasferimento" && d.account === d.to_account) { this.toast("Scegli due conti diversi"); return; }
+    if (!(amount > 0)) { this.toast(t("Inserisci un importo")); this.$layer.querySelector(".amount")?.focus(); return; }
+    if (d.type !== "trasferimento" && !d.category) { this.toast(t("Scegli una categoria")); return; }
+    if (d.type === "trasferimento" && d.account === d.to_account) { this.toast(t("Scegli due conti diversi")); return; }
     const movement = {
       type: d.type, amount, date: d.date || this.data.today, description: d.description.trim(),
-      category: d.type === "trasferimento" ? (d.category || "Trasferimento") : d.category,
+      category: d.type === "trasferimento" ? (d.category || t("Trasferimento")) : d.category,
       account: d.account, to_account: d.type === "trasferimento" ? d.to_account : "",
       method: d.method || "", note: (d.note || "").trim(),
     };
     if (s.id) await this.ws("finanze/movement/update", { id_movimento: s.id, movement });
     else await this.ws("finanze/movement/add", { movement });
     this._closeSheet();
-    this.toast(s.id ? "Modifiche salvate" : `Aggiunto ${eur(amount)}`);
+    this.toast(s.id ? t("Modifiche salvate") : t("Aggiunto {0}", eur(amount)));
   }
 
   async _saveRecurring() {
     const d = this.sheet.draft;
     const amount = num(d.amount);
-    if (!d.name.trim()) { this.toast("Dai un nome alla spesa"); return; }
-    if (!(amount > 0)) { this.toast("Inserisci un importo"); return; }
+    if (!d.name.trim()) { this.toast(t("Dai un nome alla spesa")); return; }
+    if (!(amount > 0)) { this.toast(t("Inserisci un importo")); return; }
     const due = d.next_due || this.data.today;
     await this.ws("finanze/recurring/save", { item: {
       ...(this.sheet.id ? { id: this.sheet.id } : {}),
@@ -872,7 +973,7 @@ class FinanzePanel extends HTMLElement {
       end_date: d.end_date || null, active: d.active !== false,
     } });
     this._closeSheet();
-    this.toast("Spesa fissa salvata");
+    this.toast(t("Spesa fissa salvata"));
   }
 
   async _saveSettings() {
@@ -888,7 +989,7 @@ class FinanzePanel extends HTMLElement {
       methods: clean("methods").map((c) => c.name.trim()), renames,
     });
     this.settingsDraft = null;
-    this.toast("Impostazioni salvate");
+    this.toast(t("Impostazioni salvate"));
   }
 
   async _import(file) {
@@ -897,18 +998,18 @@ class FinanzePanel extends HTMLElement {
       const payload = JSON.parse(await file.text());
       const res = await this.ws("finanze/import", { payload, mode: this._importMode === "replace" ? "replace" : "merge" });
       this.settingsDraft = null;
-      this.toast(`Importati: ${res.movimenti} movimenti, ${res.spese_fisse} spese fisse`);
+      this.toast(t("Importati: {0} movimenti, {1} spese fisse", res.movimenti, res.spese_fisse));
     } catch (err) {
-      this.toast("Importazione non riuscita: " + (err.message || err));
+      this.toast(t("Importazione non riuscita: {0}", err.message || err));
     }
     this.shadowRoot.getElementById("file").value = "";
   }
 
   _csv() {
     const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const rows = [["Data", "Tipo", "Categoria", "Descrizione", "Metodo", "Conto", "Conto destinazione", "Importo", "Note", "Inserito da"]];
-    for (const m of this.movements) rows.push([m.date, TIPI[m.type], m.category, m.description, m.method, m.account, m.to_account, String(m.amount).replace(".", ","), m.note, m.created_by]);
-    return "﻿" + rows.map((r) => r.map(q).join(";")).join("\r\n");
+    const rows = [["Data", "Tipo", "Categoria", "Descrizione", "Metodo", "Conto", "Conto destinazione", "Importo", "Note", "Inserito da"].map((h) => t(h))];
+    for (const m of this.movements) rows.push([m.date, t(TIPI[m.type]), m.category, m.description, m.method, m.account, m.to_account, String(m.amount).replace(".", DEC), m.note, m.created_by]);
+    return "﻿" + rows.map((r) => r.map(q).join(DEC === "," ? ";" : ",")).join("\r\n");
   }
   _download(name, text, mime) {
     const url = URL.createObjectURL(new Blob([text], { type: mime }));

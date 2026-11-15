@@ -19,6 +19,7 @@ from . import websocket
 from .const import (
     CONF_NOTIFY_TIME, DEFAULT_NOTIFY_TIME, DOMAIN, PANEL_COMPONENT, PANEL_URL, STATIC_URL, VERSION,
 )
+from .i18n import tr
 from .manager import FinanzeError, FinanzeManager, FinanzeRegistry
 from .reminders import Reminders
 
@@ -61,7 +62,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         """L'archivio è quello dell'utente che esegue l'azione, o di `utente` se indicato."""
         registry: FinanzeRegistry | None = hass.data.get(DOMAIN)
         if registry is None:
-            raise ServiceValidationError("Finanze non è configurata")
+            raise ServiceValidationError(tr(hass, "not_configured"))
         try:
             if name := call.data.get("utente"):
                 manager = await registry.get_by_name(name)
@@ -69,19 +70,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 if caller and caller != manager.user_id:
                     user = await hass.auth.async_get_user(caller)
                     if not (user and user.is_admin):
-                        raise FinanzeError("Puoi scrivere solo nel tuo archivio")
+                        raise FinanzeError(tr(hass, "own_archive_only"))
                 return manager
             if call.context.user_id:
                 return await registry.get(call.context.user_id)
         except FinanzeError as err:
             raise ServiceValidationError(str(err)) from err
-        raise ServiceValidationError(
-            "Chiamata da un'automazione: indica in «utente» il nome dell'utente di Home Assistant")
+        raise ServiceValidationError(tr(hass, "need_user"))
 
     async def _user(call: ServiceCall) -> str:
         if call.context.user_id and (user := await hass.auth.async_get_user(call.context.user_id)):
             return user.name or ""
-        return "Automazione"
+        return tr(hass, "automation")
 
     async def add_movement(call: ServiceCall) -> ServiceResponse:
         d = call.data
@@ -128,7 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         frontend_url_path=PANEL_URL,
         webcomponent_name=PANEL_COMPONENT,
-        sidebar_title="Finanze",
+        sidebar_title="FinanceTracker",
         sidebar_icon="mdi:wallet-outline",
         module_url=f"{STATIC_URL}/finanze-panel.js?v={VERSION}",
         require_admin=False,
