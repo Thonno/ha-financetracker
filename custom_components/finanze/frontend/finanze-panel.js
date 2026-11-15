@@ -66,15 +66,16 @@ const recActive = (r) => r.active !== false && !pastEnd(r.next_due, r.end_date);
 
 /* -------------------------------------------------------------------- stile */
 const STYLE = `
-:host{display:block;height:100%;color:#fff;-webkit-tap-highlight-color:transparent;
+:host{display:block;height:100vh;height:100dvh;overflow:hidden;color:#fff;-webkit-tap-highlight-color:transparent;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;font-size:14px;line-height:1.35;
   font-family:var(--ha-font-family-body,var(--paper-font-body1_-_font-family,Roboto,system-ui,sans-serif));
   --acc:#f6a23a;--acc2:#ea863c;--accbg:linear-gradient(145deg,rgba(246,162,58,.14),rgba(246,162,58,.04));--accbd:1.5px solid rgba(246,162,58,.65);
   --panel:rgb(23,27,36);--sheet:#171b24;--tile:rgba(255,255,255,.04);--bd:1px solid rgba(255,255,255,.07);--line:rgba(255,255,255,.07);
   --t2:rgba(255,255,255,.55);--t3:rgba(255,255,255,.45);--in:#4cd08a;--out:#ff7a6b;--fz-r:26px;color-scheme:dark}
 *{box-sizing:border-box}
 ha-icon{--mdc-icon-size:20px;display:inline-flex}
-.app{display:flex;flex-direction:column;height:100%;position:relative;
-  background:radial-gradient(1400px 1000px at 0% 15%,rgba(112,76,36,.36),transparent 62%),radial-gradient(1500px 900px at 100% 100%,rgba(28,50,110,.34),transparent 65%),#0c0f15}
+.app{display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative;
+  background:radial-gradient(160% 70% at 0% 15%,rgba(112,76,36,.36),transparent 62%),radial-gradient(170% 65% at 100% 100%,rgba(28,50,110,.34),transparent 65%),#0c0f15}
 header{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 12px 4px;flex:none}
 header .tt{flex:1;min-width:0}
 header h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.2px}
@@ -82,7 +83,7 @@ header .who{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:va
 .ib{background:rgba(255,255,255,.06);border:var(--bd);color:rgba(255,255,255,.88);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
 .ib[disabled]{opacity:.3}
 .ib svg{width:22px;height:22px;fill:currentColor}
-main{flex:1;overflow-y:auto;padding:8px 12px 120px;-webkit-overflow-scrolling:touch}
+main{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 12px 120px;-webkit-overflow-scrolling:touch}
 .wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 nav{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;gap:2px;padding:5px;z-index:3;
   background:rgb(22,26,35);border:var(--bd);border-radius:24px;box-shadow:0 10px 26px rgba(0,0,0,.45);max-width:640px;margin:0 auto}
