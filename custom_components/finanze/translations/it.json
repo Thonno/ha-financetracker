@@ -1,0 +1,97 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Finanze",
+        "description": "Ogni utente di Home Assistant ha il proprio archivio separato. Qui scegli solo l'ora dei promemoria: i dispositivi da notificare li sceglie ogni utente nel pannello Finanze → Impostazioni.",
+        "data": {
+          "notify_time": "Ora del promemoria"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Finanze è già configurata.",
+      "single_instance_allowed": "Finanze è già configurata."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Promemoria spese fisse",
+        "data": {
+          "notify_time": "Ora del promemoria"
+        }
+      }
+    }
+  },
+  "services": {
+    "aggiungi_movimento": {
+      "name": "Aggiungi movimento",
+      "description": "Registra un'entrata, un'uscita o un trasferimento.",
+      "fields": {
+        "importo": {
+          "name": "Importo",
+          "description": "Importo in euro, sempre positivo."
+        },
+        "tipo": {
+          "name": "Tipo",
+          "description": "uscita, entrata o trasferimento."
+        },
+        "categoria": {
+          "name": "Categoria",
+          "description": "Categoria del movimento."
+        },
+        "descrizione": {
+          "name": "Descrizione",
+          "description": "Descrizione libera."
+        },
+        "conto": {
+          "name": "Conto",
+          "description": "Conto su cui avviene il movimento (vuoto = primo conto)."
+        },
+        "conto_destinazione": {
+          "name": "Conto di destinazione",
+          "description": "Solo per i trasferimenti."
+        },
+        "metodo": {
+          "name": "Metodo di pagamento",
+          "description": "Bancomat, Carta, PayPal…"
+        },
+        "data": {
+          "name": "Data",
+          "description": "Vuoto = oggi."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Note facoltative."
+        },
+        "utente": {
+          "name": "Utente",
+          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
+        }
+      }
+    },
+    "registra_spesa_fissa": {
+      "name": "Registra spesa fissa",
+      "description": "Registra la rata di una spesa fissa e sposta in avanti la scadenza.",
+      "fields": {
+        "spesa": {
+          "name": "Spesa fissa",
+          "description": "Nome (es. Mutuo) o id della spesa fissa."
+        },
+        "importo": {
+          "name": "Importo",
+          "description": "Vuoto = importo previsto."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Vuoto = data di scadenza."
+        },
+        "utente": {
+          "name": "Utente",
+          "description": "Solo nelle automazioni: nome dell'utente di Home Assistant nel cui archivio scrivere. Vuoto = chi esegue l'azione."
+        }
+      }
+    }
+  }
+}

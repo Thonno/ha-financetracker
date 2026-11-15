@@ -1,0 +1,141 @@
+"""Sensori facoltativi, per utente.
+
+Le entità di Home Assistant sono visibili a TUTTI gli utenti: per questo ogni
+utente decide dal pannello (Impostazioni) se crearle per i propri dati.
+"""
+from __future__ import annotations
+
+from typing import Any, Callable
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
+
+from . import logic
+from .const import DOMAIN, SIGNAL_ANY
+from .manager import FinanzeManager
+
+
+def _month_totals(m: FinanzeManager) -> dict:
+    today = m.today()
+    return logic.period_totals(m.data["movements"], *logic.month_bounds(today.year, today.month))
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+                            async_add_entities: AddEntitiesCallback) -> None:
+    registry = entry.runtime_data.registry
+    created: dict[str, set[str]] = {}  # user_id -> unique_id creati
+    ent_reg = er.async_get(hass)
+
+    def build(manager: FinanzeManager) -> list[FinanzeSensor]:
+        uid = manager.user_id
+        slug = slugify(manager.user_name or uid[:6])
+        device = DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_{uid}")},
+            name=f"Finanze {manager.user_name}".strip(),
+            manufacturer="Finanze personali",
+            entry_type=DeviceEntryType.SERVICE,
+            configuration_url="/finanze",
+        )
+        known = created.setdefault(uid, set())
+
+        def mk(key: str, name: str, icon: str, value: Callable[[], Any],
+               attrs: Callable[[], dict] | None = None, monetary: bool = True) -> FinanzeSensor | None:
+            unique = f"{entry.entry_id}_{uid}_{key}"
+            if unique in known:
+                return None
+            known.add(unique)
+            return FinanzeSensor(manager, device, unique, f"sensor.finanze_{slug}_{key}",
+                                 name, icon, value, attrs, monetary)
+
+        items = [
+            mk("saldo_totale", "Saldo totale", "mdi:wallet",
+               lambda: round(sum(logic.account_balances(manager.data).values()), 2),
+               lambda: {"conti": logic.account_balances(manager.data)}),
+            mk("entrate_mese", "Entrate del mese", "mdi:arrow-down-bold-circle",
+               lambda: _month_totals(manager)["entrate"]),
+            mk("uscite_mese", "Uscite del mese", "mdi:arrow-up-bold-circle",
+               lambda: _month_totals(manager)["uscite"],
+               lambda: {"per_categoria": logic.expenses_by_category(
+                   manager.data["movements"],
+                   *logic.month_bounds(manager.today().year, manager.today().month))}),
+            mk("netto_mese", "Netto del mese", "mdi:scale-balance",
+               lambda: _month_totals(manager)["netto"]),
+            mk("spese_fisse_mensili", "Spese fisse mensili", "mdi:calendar-sync",
+               lambda: logic.recurring_monthly_total(manager.data["recurring"])),
+            mk("scadenze", "Spese fisse da registrare", "mdi:bell-ring",
+               lambda: len(logic.recurring_due(manager.data["recurring"], manager.today())),
+               lambda: {"voci": [
+                   {"nome": r["name"], "importo": r["amount"], "scadenza": r["next_due"]}
+                   for r in logic.recurring_due(manager.data["recurring"], manager.today())]},
+               monetary=False),
+        ]
+        for acc in manager.data["accounts"]:
+            name = acc["name"]
+            items.append(mk(f"saldo_{slugify(name)}", f"Saldo {name}", "mdi:bank",
+                            lambda n=name: logic.account_balances(manager.data).get(n)))
+        return [e for e in items if e is not None]
+
+    entities: list[FinanzeSensor] = []
+    for manager in registry.managers.values():
+        if manager.settings.get("sensors"):
+            entities += build(manager)
+    async_add_entities(entities)
+
+    # rimuove le entità di chi ha disattivato i sensori (o rinominato un conto)
+    wanted = {u for s in created.values() for u in s}
+    for ent in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        if ent.unique_id not in wanted:
+            ent_reg.async_remove(ent.entity_id)
+
+    @callback
+    def on_update(user_id: str) -> None:
+        manager = registry.managers.get(user_id)
+        if manager is None:
+            return
+        enabled = bool(manager.settings.get("sensors"))
+        had = bool(created.get(user_id))
+        if enabled and (new := build(manager)):
+            async_add_entities(new)
+        elif had and not enabled:
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(async_dispatcher_connect(hass, SIGNAL_ANY, on_update))
+
+
+class FinanzeSensor(SensorEntity):
+    _attr_has_entity_name = True
+    _attr_should_poll = True  # aggiorna anche al cambio di giorno / mese
+
+    def __init__(self, manager: FinanzeManager, device: DeviceInfo, unique_id: str,
+                 entity_id: str, name: str, icon: str, value: Callable[[], Any],
+                 attrs: Callable[[], dict] | None, monetary: bool) -> None:
+        self._manager = manager
+        self._value = value
+        self._attrs = attrs
+        self._attr_unique_id = unique_id
+        self.entity_id = entity_id
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_device_info = device
+        if monetary:
+            self._attr_device_class = SensorDeviceClass.MONETARY
+            self._attr_native_unit_of_measurement = "EUR"
+            self._attr_suggested_display_precision = 2
+
+    @property
+    def native_value(self) -> Any:
+        return self._value()
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        return self._attrs() if self._attrs else None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, self._manager.signal, self.async_write_ha_state))

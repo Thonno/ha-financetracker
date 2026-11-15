@@ -1,0 +1,66 @@
+aggiungi_movimento:
+  fields:
+    importo:
+      required: true
+      example: 12.50
+      selector:
+        number:
+          min: 0
+          step: 0.01
+          mode: box
+          unit_of_measurement: "€"
+    tipo:
+      default: uscita
+      selector:
+        select:
+          options: ["uscita", "entrata", "trasferimento"]
+    categoria:
+      example: Spesa
+      selector:
+        text:
+    descrizione:
+      example: Coop
+      selector:
+        text:
+    conto:
+      example: Conto corrente
+      selector:
+        text:
+    conto_destinazione:
+      selector:
+        text:
+    metodo:
+      example: Bancomat
+      selector:
+        text:
+    data:
+      selector:
+        date:
+    note:
+      selector:
+        text:
+    utente:
+      example: Mario
+      selector:
+        text:
+registra_spesa_fissa:
+  fields:
+    spesa:
+      required: true
+      example: Mutuo
+      selector:
+        text:
+    importo:
+      selector:
+        number:
+          min: 0
+          step: 0.01
+          mode: box
+          unit_of_measurement: "€"
+    data:
+      selector:
+        date:
+    utente:
+      example: Mario
+      selector:
+        text:
