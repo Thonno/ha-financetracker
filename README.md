@@ -9,6 +9,8 @@
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thonno&repository=ha-financetracker&category=integration)
 [![Open your Home Assistant instance and start setting up FinanceTracker.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=financetracker)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/aascione956)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Thonno)
 
 A personal finance tracker that lives inside Home Assistant. You log income and expenses by hand – no bank connection, no receipt scanning, no cloud service – and get balances, monthly reports and reminders for recurring payments, from a sidebar panel designed for the Home Assistant Companion app on your phone.
 
@@ -183,6 +185,12 @@ The JSON format is simple: `accounts`, `categories`, `methods`, `movements` and 
 ## Contributing
 
 Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/financetracker/frontend/financetracker-panel.js`; its strings are in the `EN` table at the top of the file, keyed by the Italian text. Server-side texts are in `i18n.py` and `translations/`. Calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
+
+## Support
+
+FinanceTracker is free and always will be. If it saves you time and you'd like to say thanks, you can [buy me a coffee](https://www.buymeacoffee.com/aascione956) or [sponsor me on GitHub](https://github.com/sponsors/Thonno) – entirely optional, and much appreciated.
+
+<a href="https://www.buymeacoffee.com/aascione956"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=aascione956&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
 
 ## License
 
