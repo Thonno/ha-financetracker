@@ -1,19 +1,32 @@
-<p align="center">
+<div align="center">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/custom_components/financetracker/brand/dark_logo@2x.png">
   <img alt="FinanceTracker" src="https://raw.githubusercontent.com/Thonno/ha-financetracker/main/custom_components/financetracker/brand/logo@2x.png" height="96">
 </picture>
-</p>
 
 # FinanceTracker for Home Assistant
+
+**Your personal finances, inside Home Assistant: no bank sync, no cloud.**
+
+Log income and expenses by hand and get balances, monthly reports, savings interest and reminders for recurring payments, from a sidebar panel designed for the Home Assistant Companion app on your phone.
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Thonno&repository=ha-financetracker&category=integration)
 [![Open your Home Assistant instance and start setting up FinanceTracker.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=financetracker)
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/aascione956)
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Thonno)
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Thonno)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/aascione956)
+[![Star on GitHub](https://img.shields.io/github/stars/Thonno/ha-financetracker?style=for-the-badge&logo=github&label=Star)](https://github.com/Thonno/ha-financetracker/stargazers)
 
-A personal finance tracker that lives inside Home Assistant. You log income and expenses by hand – no bank connection, no receipt scanning, no cloud service – and get balances, monthly reports and reminders for recurring payments, from a sidebar panel designed for the Home Assistant Companion app on your phone.
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://hacs.xyz/)
+![Home Assistant 2025.1+](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-18BCF2?logo=homeassistant&logoColor=white)
+[![Release](https://img.shields.io/github/v/release/Thonno/ha-financetracker?include_prereleases&sort=semver)](https://github.com/Thonno/ha-financetracker/releases)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Languages](https://img.shields.io/badge/UI-English%20%7C%20Italiano-blue)
+
+</div>
+
+---
 
 > **Languages:** English and Italian. The panel, the entity names, the notifications and the starter categories follow the language set in Home Assistant (any other language falls back to English). More translations are welcome – see [Contributing](#contributing).
 
@@ -189,9 +202,9 @@ Issues and pull requests are welcome, especially translations of the panel. The 
 
 ## Support
 
-FinanceTracker is free and always will be. If it saves you time and you'd like to say thanks, you can [buy me a coffee](https://www.buymeacoffee.com/aascione956) or [sponsor me on GitHub](https://github.com/sponsors/Thonno) – entirely optional, and much appreciated.
+FinanceTracker is free and always will be. If it saves you time and you'd like to say thanks, you can [buy me a coffee](https://buymeacoffee.com/aascione956) or [sponsor me on GitHub](https://github.com/sponsors/Thonno) – entirely optional, and much appreciated.
 
-<a href="https://www.buymeacoffee.com/aascione956"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=aascione956&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
+<a href="https://buymeacoffee.com/aascione956"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=aascione956&button_colour=FFDD00&font_colour=000000&font_family=Inter&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
 
 ## License
 
