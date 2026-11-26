@@ -240,7 +240,7 @@ const STYLE = `
 ha-icon{--mdc-icon-size:20px;display:inline-flex}
 .app{display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative;
   background:var(--bg)}
-header{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 8px) 12px 4px;flex:none}
+header{display:flex;align-items:center;gap:6px;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 8px) 12px 4px;flex:none}
 header .tt{flex:1;min-width:0}
 header h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.2px}
 header h1.logo{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.3px}
@@ -261,20 +261,20 @@ main{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding
 }
 @media(min-width:1600px){.wrap.cols{columns:3;max-width:1700px}}
 @media(max-height:520px) and (orientation:landscape){
-  header{padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:0}
+  header{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 4px);padding-bottom:0}
   header .who{display:none} header h1{font-size:18px}
   .ib{width:36px;height:36px}
-  nav{bottom:calc(6px + env(safe-area-inset-bottom));padding:3px;max-width:520px}
+  nav{bottom:calc(6px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));padding:3px;max-width:520px}
   nav button{flex-direction:row;justify-content:center;gap:6px;padding:7px 0}
   nav button span{display:none} nav button.on span{display:inline}
-  main{padding:4px max(12px,env(safe-area-inset-left)) 70px max(12px,env(safe-area-inset-right))}
-  .fab{bottom:calc(60px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:16px}
+  main{padding:4px max(12px,var(--safe-area-inset-left,env(safe-area-inset-left,0px))) 70px max(12px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)))}
+  .fab{bottom:calc(60px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));width:50px;height:50px;border-radius:16px}
   .big{font-size:34px}
   .wrap.cols{display:block;max-width:none;columns:2;column-gap:12px}
   .wrap.cols>*{break-inside:avoid;margin-bottom:12px}
   .wrap.cols>.span{column-span:all}
 }
-nav{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;gap:2px;padding:5px;z-index:3;
+nav{position:absolute;left:10px;right:10px;bottom:calc(10px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));display:flex;gap:2px;padding:5px;z-index:3;
   background:var(--nav);border:var(--bd);border-radius:24px;box-shadow:var(--shn);max-width:640px;margin:0 auto}
 nav button{flex:1;background:none;border:0;color:rgba(var(--fgr),.62);padding:7px 0 6px;font:inherit;font-size:10.5px;font-weight:700;
   display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;border-radius:18px;min-width:0}
@@ -327,7 +327,7 @@ nav button.on{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#2b
 .btn.danger{color:var(--out)}
 .btn.sm{padding:8px 14px;font-size:13px;border-radius:12px}
 .btn[disabled]{opacity:.5}
-.fab{position:absolute;right:18px;bottom:calc(92px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:20px;border:0;
+.fab{position:absolute;right:18px;bottom:calc(92px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));width:60px;height:60px;border-radius:20px;border:0;
   background:linear-gradient(135deg,var(--acc),var(--acc2));color:#2b1904;box-shadow:0 10px 26px rgba(246,162,58,.38);display:grid;place-items:center;cursor:pointer;z-index:2}
 .fab svg{width:30px;height:30px;fill:currentColor}
 .seg{display:flex;background:rgba(var(--fgr),.04);border:var(--bd);border-radius:16px;padding:4px;gap:4px}
@@ -357,11 +357,11 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--t2
 .sheet .hd .ico{background:rgba(246,162,58,.15);color:var(--acct)}
 .sheet .hd h3{flex:1;margin:0;font-size:18px;font-weight:700}
 .sheet .bd{overflow-y:auto;padding:10px 16px 16px;display:flex;flex-direction:column;gap:14px}
-.sheet .ft{display:flex;gap:8px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.sheet .ft{display:flex;gap:8px;padding:10px 16px calc(14px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));border-top:1px solid var(--line)}
 .sheet .ft .btn:last-child{flex:1}
 @media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:26px;max-height:86%}}
 @keyframes up{from{transform:translateY(40px);opacity:.4}} @keyframes fade{from{opacity:0}}
-.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--toast);color:var(--fg);
+.toast{position:fixed;left:50%;bottom:calc(100px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));transform:translateX(-50%);background:var(--toast);color:var(--fg);
   border:1.5px solid rgba(246,162,58,.65);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;z-index:20;box-shadow:var(--shn);animation:fade .2s;max-width:90%}
 .badge{display:inline-block;font-size:10px;border-radius:99px;padding:2px 8px;background:rgba(246,162,58,.15);color:var(--acct);font-weight:700;vertical-align:middle;
   border:1px solid rgba(246,162,58,.5);text-transform:uppercase;letter-spacing:.08em}

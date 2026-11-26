@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import inspect
 from pathlib import Path
 
 import voluptuous as vol
@@ -128,6 +129,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ])
         hass.data[f"{DOMAIN}_static"] = True
 
+    extra = {}
+    # Il pannello gestisce da sé le aree sicure (notch, barra di stato): senza questa
+    # opzione Home Assistant aggiunge il suo margine e nell'app si vede uno spazio vuoto.
+    if "handle_safe_area" in inspect.signature(panel_custom.async_register_panel).parameters:
+        extra["handle_safe_area"] = True
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL,
@@ -137,6 +143,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         module_url=f"{STATIC_URL}/financetracker-panel.js?v={VERSION}",
         require_admin=False,
         config={},
+        **extra,
     )
 
     reminders = Reminders(hass, registry, entry.options.get(CONF_NOTIFY_TIME, DEFAULT_NOTIFY_TIME))

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-11-26
+
+### Fixed
+
+- Home Assistant Companion app: the panel header no longer starts with an empty gap at the top of the screen, and the bottom bar is no longer raised. Recent Home Assistant versions add their own safe-area padding to custom panels; FinanceTracker now handles the safe area itself, using the insets provided by the app.
+
 ## [2.4.0] - 2026-11-26
 
 ### Added
@@ -54,7 +60,8 @@ First public release.
 - Configurable currency, English and Italian translations.
 - JSON backup and restore, CSV export and a spreadsheet converter.
 
-[Unreleased]: https://github.com/Thonno/ha-financetracker/compare/2.4.0...HEAD
+[Unreleased]: https://github.com/Thonno/ha-financetracker/compare/2.4.1...HEAD
+[2.4.1]: https://github.com/Thonno/ha-financetracker/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/Thonno/ha-financetracker/compare/2.3.3...2.4.0
 [2.3.3]: https://github.com/Thonno/ha-financetracker/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/Thonno/ha-financetracker/compare/2.3.1...2.3.2
