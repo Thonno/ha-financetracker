@@ -47,6 +47,9 @@
       },
       "recurring_due": {
         "name": "Recurring expenses due"
+      },
+      "budget_remaining": {
+        "name": "Budget left this month"
       }
     }
   },

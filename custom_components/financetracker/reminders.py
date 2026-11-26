@@ -1,7 +1,7 @@
-"""Promemoria delle spese fisse: notifica con i pulsanti Registra / Salta.
+"""Promemoria delle spese fisse (pulsanti Registra / Salta) e avvisi dei budget.
 
 Ogni utente sceglie dal pannello su quali dispositivi riceverli; le notifiche
-riguardano solo le sue spese fisse.
+riguardano solo i suoi dati.
 """
 from __future__ import annotations
 
@@ -9,12 +9,13 @@ import logging
 from datetime import time
 
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_call_later, async_track_time_change
 
 from . import logic
 from .logic import money
 from .i18n import language, tr
-from .const import ACTION_REGISTER, ACTION_SKIP, PANEL_URL
+from .const import ACTION_REGISTER, ACTION_SKIP, BUDGET_LEVELS, PANEL_URL, SIGNAL_ANY
 from .manager import FinanceTrackerError, FinanceTrackerManager, FinanceTrackerRegistry
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ class Reminders:
         # interessi: ogni notte e subito all'avvio (recupera i giorni persi)
         self._unsubs.append(async_track_time_change(self.hass, self._interest, hour=0, minute=5, second=0))
         self._unsubs.append(async_call_later(self.hass, 20, self._interest))
+        # budget: controllati a ogni modifica dell'archivio
+        self._unsubs.append(async_dispatcher_connect(self.hass, SIGNAL_ANY, self._on_update))
 
     @callback
     def stop(self) -> None:
@@ -55,6 +58,38 @@ class Reminders:
                 manager.accrue_interest()
             except Exception:  # noqa: BLE001 - un archivio con problemi non blocca gli altri
                 _LOGGER.exception("Calcolo interessi non riuscito per %s", manager.user_name)
+
+    @callback
+    def _on_update(self, user_id: str) -> None:
+        self.hass.async_create_task(self._budgets(user_id))
+
+    async def _budgets(self, user_id: str) -> None:
+        manager = self.registry.managers.get(user_id)
+        if manager is None or not manager.data.get("budgets"):
+            return
+        try:
+            due = await manager.check_budget_alerts(BUDGET_LEVELS)
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("Controllo budget non riuscito per %s", manager.user_name)
+            return
+        services = _services(manager)
+        if not due or not services or not manager.settings.get("budget_alerts", True):
+            return
+        lang = language(self.hass)
+        for status, level in due:
+            message = tr(self.hass, "budget_message", category=status["category"],
+                         spent=money(status["spent"], manager.currency, lang),
+                         amount=money(status["amount"], manager.currency, lang),
+                         pct=f"{status['pct']:.0f}")
+            data = {"tag": f"financetracker_budget_{status['category']}", "group": "financetracker",
+                    "url": f"/{PANEL_URL}", "clickAction": f"/{PANEL_URL}"}
+            title = tr(self.hass, "budget_title_100" if level >= 100 else "budget_title_80")
+            for service in services:
+                try:
+                    await self.hass.services.async_call(
+                        "notify", service, {"title": title, "message": message, "data": data}, blocking=True)
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning("Notifica %s non inviata: %s", service, err)
 
     async def _tick(self, _now=None) -> None:
         for manager in list(self.registry.managers.values()):

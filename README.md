@@ -67,6 +67,7 @@ Log income and expenses by hand and get balances, monthly reports, savings inter
 - **Accounts and transfers**: track several accounts (current account, savings, cash, PayPal…), each with an opening balance. Transfers between accounts (ATM withdrawals, moving money to savings) change balances but don't count as income or expenses.
 - **Transactions**: browse by month, search, and filter by type, category and account. Edit or delete any entry.
 - **Reports** by month or year: income vs. expenses over time, spending by category, by payment method and by account, and a dedicated total for mortgage, loans and subscriptions.
+- **Monthly budgets**: set a spending limit for the categories you want to keep an eye on. Progress bars on Home and in the monthly report show how much is left and how far into the month you are, and you get a notification at 80 % and 100 %.
 - **Interest on savings accounts**: set tiered annual rates per account (e.g. 2.5% up to €3,000, 1% above) and an optional tax withholding; interest is calculated on the end-of-day balance and recorded automatically every day as income.
 - **Recurring expenses**: monthly, bimonthly, quarterly, half-yearly or yearly, with an optional last-instalment date. When one is due you get an actionable notification with **Register** / **Skip** buttons; answering on one device clears it everywhere.
 - **One private archive per Home Assistant user**: each person who opens the panel sees only their own data (see [Privacy](#privacy-and-multi-user-behaviour)).
@@ -101,7 +102,20 @@ Copy `custom_components/financetracker` into your Home Assistant `config/custom_
 2. Go to **Settings** and set up your accounts with their opening balances, your categories and your payment methods (a new archive starts with a sensible default set).
 3. Under **Recurring expense reminders**, tap the devices that should receive your notifications.
 4. Add your recurring expenses under **Recurring**, then start logging with the **+** button.
-5. Optionally, in **Settings**: pick the panel theme, a currency different from Home Assistant's, and interest rates for your savings accounts (see below).
+5. Optionally, in **Settings**: set monthly budgets, pick the panel theme, a currency different from Home Assistant's, and interest rates for your savings accounts (see below).
+
+## Monthly budgets
+
+1. Open **Settings → Monthly budgets** (or tap **Set up** on the Budget card in **Reports**).
+2. Add a row for each category you want to limit and enter the monthly amount. Categories without a budget are not affected.
+3. Save. The **Budget** card appears on Home and in the monthly report, sorted by how much of each budget is used.
+
+How it works:
+
+- Only expenses count; income and transfers don't. Budgets start again on the 1st of every month.
+- Bars turn amber at 80 % and red above 100 %. In the current month, a thin vertical line shows how much of the month has passed, so you can tell at a glance whether you are spending faster than planned.
+- **Alerts**: when a category reaches 80 % and then 100 %, a notification is sent to the devices selected under **Recurring expense reminders**. Each threshold is notified once per month; changing a budget's amount resets its alerts. You can turn alerts off in the budget editor.
+- Renaming a category in Settings keeps its budget; deleting the category removes it.
 
 ## Interest on savings accounts
 
@@ -147,6 +161,7 @@ Turn them on in the panel under **Settings → Sensors in Home Assistant**. Each
 | Net this month | Income minus expenses |
 | Monthly recurring expenses | Monthly total of active recurring expenses |
 | Recurring expenses due | Number of recurring expenses waiting to be registered |
+| Budget left this month | Created once you set a budget: total left across all budgets, with spent, limit and percentage per category as attributes |
 
 ## Actions
 
@@ -194,11 +209,15 @@ python3 tools/excel_to_financetracker.py my_finances.xlsx financetracker_import.
 
 Rows in the `Prelievo` (withdrawal) category become transfers to `Contanti` (cash). With `--principale` and `--deposito`, rows in the `Conto deposito` category become transfers between those two accounts. For recurring expenses, the next due date is worked out from the last matching payment; those with no match are flagged *da verificare* (to check).
 
-The JSON format is simple: `accounts`, `categories`, `methods`, `movements` and `recurring`. Export a backup from the panel to see a complete example.
+The JSON format is simple: `accounts`, `categories`, `methods`, `movements`, `recurring` and `budgets`. Export a backup from the panel to see a complete example.
 
 ## Contributing
 
 Issues and pull requests are welcome, especially translations of the panel. The panel is a single dependency-free web component, `custom_components/financetracker/frontend/financetracker-panel.js`; its strings are in the `EN` table at the top of the file, keyed by the Italian text. Server-side texts are in `i18n.py` and `translations/`. Calculations live in `logic.py`, which has no Home Assistant imports and is easy to test.
+
+Run the tests with `pytest` (no Home Assistant install needed; the few parts used are stubbed in `tests/conftest.py`) and the panel smoke test with `node tests/panel_smoke.js`.
+
+When reporting a bug, please attach the diagnostics file (*Settings → Devices & services → FinanceTracker → ⋮ → Download diagnostics*). It contains only counts and settings: no names, amounts or descriptions.
 
 ## Support
 

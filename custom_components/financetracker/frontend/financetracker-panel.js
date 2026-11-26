@@ -84,6 +84,20 @@ const EN = {
     "Home Assistant's currency is set in Settings → System → Home information. Changing currency does not convert amounts already recorded.",
   "Valuta: {0}": "Currency: {0}", "Valuta di Home Assistant": "Home Assistant currency",
   "Tipo": "Type", "Conto destinazione": "Destination account", "Importo": "Amount", "Inserito da": "Added by",
+  "Budget": "Budget", "Budget mensili": "Monthly budgets", "Modifica": "Edit", "Imposta": "Set up",
+  "{0} rimasti su {1}": "{0} left of {1}", "Sforato di {0}": "Over by {0}", "Restano {0}": "{0} left",
+  "{0} di {1}": "{0} of {1}", "Totale budget": "All budgets",
+  "Imposta un limite di spesa mensile per le categorie che vuoi tenere d'occhio.":
+    "Set a monthly spending limit for the categories you want to keep an eye on.",
+  "Limite di spesa al mese per categoria": "Monthly spending limit per category",
+  "Aggiungi budget": "Add budget", "Limite ({0})": "Limit ({0})",
+  "Avvisi all'80% e al 100%": "Alerts at 80% and 100%",
+  "Notifica sui dispositivi scelti in «Promemoria spese fisse», una volta per soglia ogni mese.":
+    "Sent to the devices chosen under “Recurring expense reminders”, once per threshold each month.",
+  "La riga verticale indica quanto del mese è già passato.": "The vertical line shows how much of the month has passed.",
+  "Budget salvati": "Budgets saved", "Ogni budget deve avere una categoria diversa": "Each budget needs a different category",
+  "Indica un limite maggiore di zero": "Enter a limit greater than zero",
+  "Budget mensili per categoria, con avvisi": "Monthly budgets per category, with alerts",
 };
 let LANG = "it", LOCALE = "it-IT", DEC = ",", CUR = "EUR", SYM = "€";
 let EUR, EUR0;
@@ -296,6 +310,9 @@ nav button.on{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#2b
 .kpi .tile{padding:9px 10px} .kpi .tile .v{font-size:15px}
 .bar{height:6px;border-radius:99px;background:rgba(var(--fgr),.07);overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.bar.bud{position:relative;height:8px}
+.bar.bud i.ok{background:var(--in)} .bar.bud i.hi{background:linear-gradient(90deg,var(--acc),var(--acc2))} .bar.bud i.over{background:var(--out)}
+.bar .pace{position:absolute;top:-1px;bottom:-1px;width:2px;border-radius:2px;background:rgba(var(--fgr),.45)}
 .list{display:flex;flex-direction:column}
 .item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .item:last-child{border-bottom:0}
@@ -579,6 +596,71 @@ class FinanceTrackerPanel extends HTMLElement {
     }).join("");
   }
 
+  /* ----------------------------------------------------------------- BUDGET */
+  _budgetRows(k) {
+    const spent = new Map(groupSum(this._monthMovs(k), "category").map((c) => [c.name, c.total]));
+    return (this.data.budgets || []).map((b) => {
+      const used = spent.get(b.category) || 0;
+      return { ...b, spent: used, pct: b.amount ? (used / b.amount) * 100 : 0 };
+    }).sort((a, b) => b.pct - a.pct);
+  }
+  _budgetCard(k, tap) {
+    const rows = this._budgetRows(k);
+    const edit = `<button class="pill" data-a="bud-edit">${t(rows.length ? "Modifica" : "Imposta")}</button>`;
+    if (!rows.length) return `<div class="card">${hd("mdi:piggy-bank-outline", t("Budget"), "", edit)}
+      <div class="sec">${t("Imposta un limite di spesa mensile per le categorie che vuoi tenere d'occhio.")}</div></div>`;
+    const tot = rows.reduce((a, r) => ({ amount: a.amount + r.amount, spent: a.spent + r.spent }), { amount: 0, spent: 0 });
+    const today = this.data.today, cur = ym(today) === k;
+    const [y, m] = k.split("-").map(Number);
+    const pace = cur ? (Number(today.slice(8, 10)) / new Date(y, m, 0).getDate()) * 100 : null;
+    const bar = (pct) => `<div class="bar bud"><i class="${pct >= 100 ? "over" : pct >= 80 ? "hi" : "ok"}" style="width:${Math.min(100, pct)}%"></i>${pace !== null ? `<span class="pace" style="left:calc(${pace}% - 1px)"></span>` : ""}</div>`;
+    const left = tot.amount - tot.spent;
+    return `<div class="card">${hd("mdi:piggy-bank-outline", t("Budget"), left >= 0 ? t("{0} rimasti su {1}", eur(left), eur(tot.amount)) : t("Sforato di {0}", eur(-left)), edit)}
+      ${rows.map((r) => `<div style="padding:7px 0;${tap ? "cursor:pointer" : ""}" ${tap ? `data-a="${tap}" data-k="${esc(r.category)}"` : ""}>
+        <div class="row"><span class="grow ell">${esc(r.category)}</span><span class="sec">${Math.round(r.pct)}%</span>
+          <b style="font-weight:500;min-width:120px;text-align:right">${t("{0} di {1}", eur0(r.spent), eur0(r.amount))}</b></div>
+        ${bar(r.pct)}
+        <div class="sec" style="font-size:12px;margin-top:3px">${r.amount - r.spent >= 0 ? t("Restano {0}", eur(r.amount - r.spent)) : `<span style="color:var(--out)">${t("Sforato di {0}", eur(r.spent - r.amount))}</span>`}</div></div>`).join("")}
+      ${pace !== null ? `<div class="sec" style="margin-top:6px">${t("La riga verticale indica quanto del mese è già passato.")}</div>` : ""}</div>`;
+  }
+  _openBudgets() {
+    const cats = this._catFreq("uscita");
+    this.sheet = {
+      kind: "bud",
+      draft: {
+        rows: (this.data.budgets || []).map((b) => ({ category: b.category, amount: fmtDec(b.amount) })),
+        alerts: this.data.settings?.budget_alerts !== false,
+      },
+    };
+    if (!this.sheet.draft.rows.length) this.sheet.draft.rows.push({ category: cats[0] || "", amount: "" });
+    this._renderSheet(true);
+  }
+  _budForm(s) {
+    const d = s.draft, cats = this._catFreq("uscita");
+    return `<div class="hd"><div class="ico"><ha-icon icon="mdi:piggy-bank-outline"></ha-icon></div><h3>${t("Budget mensili")}</h3><button class="ib" data-a="close">${svg(ICON.close)}</button></div>
+      <div class="bd">
+        <div class="sec">${t("Limite di spesa al mese per categoria")}</div>
+        <div>${d.rows.map((r, i) => `<div class="ed bud">
+          <select data-bd="${i}" data-p="category">${(cats.includes(r.category) || !r.category ? cats : [r.category, ...cats]).map((c) => `<option ${c === r.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+          <input data-bd="${i}" data-p="amount" inputmode="decimal" value="${esc(r.amount)}" placeholder="${t("Limite ({0})", SYM)}" aria-label="${t("Limite ({0})", SYM)}">
+          <button class="ib danger" data-a="b-del" data-i="${i}" aria-label="${t("Elimina")}">${svg(ICON.del)}</button></div>`).join("")}
+          <button class="pill" data-a="b-add" style="margin-top:6px"><ha-icon icon="mdi:plus"></ha-icon>${t("Aggiungi budget")}</button></div>
+        <div class="row"><div class="grow"><b>${t("Avvisi all'80% e al 100%")}</b><div class="sec">${t("Notifica sui dispositivi scelti in «Promemoria spese fisse», una volta per soglia ogni mese.")}</div></div>
+          <button class="sw ${d.alerts ? "on" : ""}" data-a="b-alerts" aria-label="${t("Avvisi all'80% e al 100%")}"></button></div>
+      </div>
+      <div class="ft"><button class="btn" data-a="b-save">${t("Salva")}</button></div>`;
+  }
+  async _saveBudgets() {
+    const d = this.sheet.draft;
+    const rows = d.rows.filter((r) => r.category || String(r.amount).trim());
+    const budgets = rows.map((r) => ({ category: r.category, amount: num(r.amount) }));
+    if (new Set(budgets.map((b) => b.category)).size !== budgets.length) throw new Error(t("Ogni budget deve avere una categoria diversa"));
+    if (budgets.some((b) => !(b.amount > 0))) throw new Error(t("Indica un limite maggiore di zero"));
+    await this.ws("financetracker/budgets/save", { budgets });
+    if (d.alerts !== (this.data.settings?.budget_alerts !== false)) await this.ws("financetracker/prefs/save", { budget_alerts: d.alerts });
+    this._closeSheet(); this.toast(t("Budget salvati"));
+  }
+
   /* ------------------------------------------------------------------- HOME */
   _home() {
     const d = this.data, today = d.today, k = ym(today);
@@ -605,6 +687,7 @@ class FinanceTrackerPanel extends HTMLElement {
         <div class="kpi">${tile(t("Entrate"), eur(tt.entrate), "in")}${tile(t("Uscite"), eur(tt.uscite), "out")}${tile(t("Netto"), eur(tt.netto), tt.netto < 0 ? "out" : "in")}</div>
         <div class="bar" style="height:8px;margin-top:14px"><i style="width:${pct}%;${pct >= 100 ? "background:var(--out)" : ""}"></i></div>
         <div class="sec" style="margin-top:6px">${tt.entrate ? t("Hai speso il {0}% delle entrate del mese", Math.round((tt.uscite / tt.entrate) * 100)) : t("Nessuna entrata registrata questo mese")}</div></div>
+      ${d.budgets?.length ? this._budgetCard(k, "cat-filter") : ""}
       ${cats.length ? `<div class="card">${hd("mdi:chart-donut", t("Dove vanno i soldi"), t("Uscite di {0} · tocca per i dettagli", LANG === "it" ? monthName(Number(k.slice(5))) : cap(monthName(Number(k.slice(5))))))}${this._bars(cats, tt.uscite, "cat-filter")}</div>` : ""}
       ${soon.length ? `<div class="card">${hd("mdi:calendar-clock", t("In arrivo"), t("Prossimi 14 giorni"))}${soon.map((r) => `<div class="row" style="padding:6px 0">
         <span class="grow ell">${esc(r.name)}</span><span class="sec">${dShort(r.next_due)}</span><b style="min-width:80px;text-align:right">${eur(r.amount)}</b></div>`).join("")}</div>` : ""}
@@ -692,6 +775,7 @@ class FinanceTrackerPanel extends HTMLElement {
         <table style="margin-top:10px"><tr><th>${t("Mese")}</th><th>${t("Entrate")}</th><th>${t("Uscite")}</th><th>${t("Netto")}</th></tr>
         ${[...series].reverse().map((s) => `<tr><td>${monthShort(Number(s.k.slice(5)))} ${s.k.slice(2, 4)}</td><td class="in">${eur0(s.entrate)}</td>
           <td class="out">${eur0(s.uscite)}</td><td class="${s.netto < 0 ? "out" : "in"}">${eur0(s.netto)}</td></tr>`).join("")}</table></div>` : ""}
+      ${r.mode === "mese" ? this._budgetCard(r.month, "cat-filter-rep") : ""}
       <div class="card">${hd("mdi:shape-outline", t("Uscite per categoria"), t("Tocca per i dettagli"))}${this._bars(cats, tt.uscite, "cat-filter-rep")}</div>
       ${fixed.length ? `<div class="card">${hd("mdi:calendar-sync", t("Mutuo, finanziamenti, abbonamenti"), eur(fixed.reduce((a, b) => a + b.total, 0)))}${this._bars(fixed, tt.uscite)}</div>` : ""}
       <div class="card">${hd("mdi:credit-card-outline", t("Per metodo di pagamento"))}${this._bars(meth, tt.uscite)}</div>
@@ -770,6 +854,8 @@ class FinanceTrackerPanel extends HTMLElement {
         <div class="sec">${t("Il numero a destra indica quanti movimenti usano la voce: le voci in uso si possono rinominare ma non eliminare. Rinominando, i movimenti vengono aggiornati.")}</div></div>
       ${listEd("categories", "category", t("Categorie"))}
       ${listEd("methods", "method", t("Metodi di pagamento"))}
+      <div class="card">${hd("mdi:piggy-bank-outline", t("Budget mensili"), t("Budget mensili per categoria, con avvisi"), `<button class="pill" data-a="bud-edit">${t((d.budgets || []).length ? "Modifica" : "Imposta")}</button>`)}
+        ${(d.budgets || []).length ? `<div class="chips">${d.budgets.map((b) => `<span class="chip">${esc(b.category)} · ${eur0(b.amount)}</span>`).join("")}</div>` : `<div class="sec">${t("Imposta un limite di spesa mensile per le categorie che vuoi tenere d'occhio.")}</div>`}</div>
       <div class="row span" style="justify-content:flex-end;gap:8px"><button class="btn flat" data-a="s-reset">${t("Annulla modifiche")}</button><button class="btn" data-a="s-save">${t("Salva impostazioni")}</button></div>
       <div class="card">${hd("mdi:database-outline", t("Dati"), t("Import, export e backup"))}
         <div class="sec" style="margin-bottom:10px">${t("I dati sono salvati in Home Assistant (cartella <code>.storage</code>) e inclusi nei backup.")}</div>
@@ -872,7 +958,7 @@ class FinanceTrackerPanel extends HTMLElement {
   _renderSheet(focus = false) {
     const s = this.sheet;
     if (!s) return;
-    const body = s.kind === "mov" ? this._movForm(s) : s.kind === "int" ? this._intForm(s) : this._recForm(s);
+    const body = s.kind === "mov" ? this._movForm(s) : s.kind === "int" ? this._intForm(s) : s.kind === "bud" ? this._budForm(s) : this._recForm(s);
     const open = this.$layer.querySelector(".sheet");
     if (open && !focus) {
       const bd = open.querySelector(".bd"), top = bd ? bd.scrollTop : 0;
@@ -1035,6 +1121,16 @@ class FinanceTrackerPanel extends HTMLElement {
           this.toast(t(cur.has(v) ? "Notifiche attive su {0}" : "Notifiche disattivate su {0}", dev)); break;
         }
         case "int-edit": this._openInterest(el.dataset.k); break;
+        // budget
+        case "bud-edit": this._openBudgets(); break;
+        case "b-add": {
+          const used = new Set(s.draft.rows.map((r) => r.category));
+          s.draft.rows.push({ category: this._catFreq("uscita").find((c) => !used.has(c)) || "", amount: "" });
+          this._renderSheet(); break;
+        }
+        case "b-del": s.draft.rows.splice(Number(el.dataset.i), 1); this._renderSheet(); break;
+        case "b-alerts": s.draft.alerts = !s.draft.alerts; this._renderSheet(); break;
+        case "b-save": el.disabled = true; await this._saveBudgets(); break;
         case "i-toggle": s.draft.enabled = !s.draft.enabled; this._renderSheet(); break;
         case "i-add": s.draft.tiers.push({ up_to: "", rate: "" }); this._renderSheet(); break;
         case "i-del": s.draft.tiers.splice(Number(el.dataset.i), 1); this._renderSheet(); break;
@@ -1072,6 +1168,8 @@ class FinanceTrackerPanel extends HTMLElement {
       this.f.search = t.value;
       const box = this.shadowRoot.getElementById("mlist");
       if (box) box.innerHTML = this._movList();
+    } else if (t.dataset.bd !== undefined && this.sheet?.kind === "bud") {
+      this.sheet.draft.rows[Number(t.dataset.bd)][t.dataset.p] = t.value;
     } else if (t.dataset.it !== undefined && this.sheet?.kind === "int") {
       this.sheet.draft.tiers[Number(t.dataset.it)][t.dataset.p] = t.value;
       const pv = this.$layer.querySelector("#ipreview"); if (pv) pv.textContent = this._intPreview();
@@ -1094,6 +1192,7 @@ class FinanceTrackerPanel extends HTMLElement {
         .catch((err) => this.toast(err?.message || String(err)));
       return;
     }
+    if (t.dataset.bd !== undefined && this.sheet?.kind === "bud") { this.sheet.draft.rows[Number(t.dataset.bd)][t.dataset.p] = t.value; return; }
     if (t.dataset.f === "category" || t.dataset.f === "account") { this.f[t.dataset.f] = t.value; this._renderMain(); }
     else if (t.dataset.d && this.sheet) {
       this.sheet.draft[t.dataset.d] = t.type === "checkbox" ? t.checked : t.value;

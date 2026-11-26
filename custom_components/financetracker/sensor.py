@@ -78,6 +78,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                    for r in logic.recurring_due(manager.data["recurring"], manager.today())]},
                monetary=False),
         ]
+        if manager.data.get("budgets"):
+            def budget_attrs() -> dict:
+                status = manager.budget_status()
+                tot = logic.budget_totals(status)
+                return {a("budget"): tot["amount"], a("spent"): tot["spent"], a("percent"): tot["pct"],
+                        a("by_category"): [{a("category"): x["category"], a("budget"): x["amount"],
+                                            a("spent"): x["spent"], a("remaining"): x["remaining"],
+                                            a("percent"): x["pct"]} for x in status]}
+            items.append(mk("budget_residuo", "budget_remaining", "mdi:piggy-bank-outline",
+                            lambda: logic.budget_totals(manager.budget_status())["remaining"], budget_attrs))
         for acc in manager.data["accounts"]:
             name = acc["name"]
             items.append(mk(f"saldo_{slugify(name)}", "account_balance", "mdi:bank",

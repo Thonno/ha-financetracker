@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 DOMAIN = "financetracker"
-VERSION = "2.3.3"
+VERSION = "2.4.0"
 
 STORAGE_KEY = "financetracker.user_{}"
 INDEX_KEY = "financetracker.users"
@@ -21,6 +21,8 @@ DEFAULT_NOTIFY_TIME = "09:00:00"
 ACTION_REGISTER = "FINANCETRACKER_REG_"
 ACTION_SKIP = "FINANCETRACKER_SKIP_"
 
+BUDGET_LEVELS = (80, 100)  # soglie (%) che fanno partire la notifica del budget
+
 DEFAULT_DATA = {
     "accounts": [
         {"name": "Conto corrente", "initial_balance": 0},
@@ -30,5 +32,8 @@ DEFAULT_DATA = {
     "methods": ["Bancomat", "Carta", "Bonifico", "Addebito diretto", "Contanti"],
     "movements": [],
     "recurring": [],
-    "settings": {"notify_services": [], "sensors": False, "theme": "auto", "currency": None},
+    "budgets": [],
+    "budget_state": {},
+    "settings": {"notify_services": [], "sensors": False, "theme": "auto", "currency": None,
+                 "budget_alerts": True},
 }

@@ -43,6 +43,12 @@ MESSAGES: dict[str, dict[str, str]] = {
     "interest_category": {"it": "Interessi", "en": "Interest"},
     "interest_desc": {"it": "Interessi maturati", "en": "Interest earned"},
     "interest_note": {"it": "Automatico · lordo {gross} · ritenuta {tax}%", "en": "Automatic · gross {gross} · tax {tax}%"},
+    "budget_categories": {"it": "Ogni budget deve avere una categoria diversa",
+                          "en": "Each budget needs a different category"},
+    "budget_title_80": {"it": "Budget quasi esaurito", "en": "Budget almost used up"},
+    "budget_title_100": {"it": "Budget superato", "en": "Budget exceeded"},
+    "budget_message": {"it": "{category}: {spent} su {amount} ({pct}%)",
+                       "en": "{category}: {spent} of {amount} ({pct}%)"},
     "bad_currency": {"it": "Valuta non valida: {code} (usa un codice ISO di 3 lettere, es. EUR)",
                      "en": "Invalid currency: {code} (use a 3-letter ISO code, e.g. EUR)"},
 }
@@ -69,6 +75,11 @@ ATTRS: dict[str, dict[str, str]] = {
     "name": {"it": "nome", "en": "name"},
     "amount": {"it": "importo", "en": "amount"},
     "due": {"it": "scadenza", "en": "due"},
+    "budget": {"it": "budget", "en": "budget"},
+    "spent": {"it": "speso", "en": "spent"},
+    "remaining": {"it": "residuo", "en": "remaining"},
+    "percent": {"it": "percentuale", "en": "percent"},
+    "category": {"it": "categoria", "en": "category"},
 }
 
 

@@ -165,6 +165,17 @@ class FinanceTrackerManager:
             r["account"] = ren_acc.get(r.get("account", ""), r.get("account", ""))
             r["category"] = ren_cat.get(r.get("category", ""), r.get("category", ""))
             r["method"] = ren_met.get(r.get("method", ""), r.get("method", ""))
+        clean_cats = [c.strip() for c in categories if str(c).strip()]
+        budgets = []
+        for b in self.data.get("budgets", []):
+            cat = ren_cat.get(b["category"], b["category"])
+            if cat in clean_cats:  # il budget di una categoria eliminata se ne va con lei
+                budgets.append({**b, "category": cat})
+        self.data["budgets"] = logic.clean_budgets(budgets)
+        levels = self.data.get("budget_state", {}).get("levels", {})
+        for orig, new in ren_cat.items():
+            if orig in levels:
+                levels[new] = levels.pop(orig)
         old = {a["name"]: a for a in self.data["accounts"]}
         back = {new: orig for orig, new in ren_acc.items()}
         new_accounts = []
@@ -178,17 +189,20 @@ class FinanceTrackerManager:
                 acc["interest"] = prev["interest"]
             new_accounts.append(acc)
         self.data["accounts"] = new_accounts
-        self.data["categories"] = [c.strip() for c in categories if str(c).strip()]
+        self.data["categories"] = clean_cats
         self.data["methods"] = [c.strip() for c in methods if str(c).strip()]
         await self._commit()
 
     async def save_prefs(self, notify_services: list[str] | None = None,
                          sensors: bool | None = None, theme: str | None = None,
-                         currency: str | None | bool = False) -> dict:
+                         currency: str | None | bool = False,
+                         budget_alerts: bool | None = None) -> dict:
         if notify_services is not None:
             self.settings["notify_services"] = [str(s) for s in notify_services]
         if sensors is not None:
             self.settings["sensors"] = bool(sensors)
+        if budget_alerts is not None:
+            self.settings["budget_alerts"] = bool(budget_alerts)
         if theme in ("auto", "light", "dark"):
             self.settings["theme"] = theme
         if currency is not False:  # None / "" = segui Home Assistant
@@ -198,6 +212,43 @@ class FinanceTrackerManager:
             self.settings["currency"] = code or None
         await self._commit()
         return self.settings
+
+    # ------------------------------------------------------------------- budget
+    async def save_budgets(self, budgets: list[dict]) -> list[dict]:
+        cats = [str(b.get("category") or "").strip() for b in budgets]
+        if any(not c for c in cats) or len(set(cats)) != len(cats):
+            raise FinanceTrackerError(tr(self.hass, "budget_categories"))
+        clean = logic.clean_budgets(budgets)
+        if len(clean) != len(budgets):
+            raise FinanceTrackerError(tr(self.hass, "amount_positive"))
+        for b in clean:
+            if b["category"] not in self.data["categories"]:
+                self.data["categories"].append(b["category"])
+        old = {b["category"]: b["amount"] for b in self.data.get("budgets", [])}
+        self.data["budgets"] = clean
+        # un budget nuovo o cambiato torna a segnalare le soglie di questo mese
+        levels = self.data.setdefault("budget_state", {}).get("levels", {})
+        for cat in list(levels):
+            if old.get(cat) != next((x["amount"] for x in clean if x["category"] == cat), None):
+                levels.pop(cat)
+        await self._commit()
+        return clean
+
+    def budget_status(self, on: date | None = None) -> list[dict]:
+        day = on or self.today()
+        return logic.budget_status(self.data["movements"], self.data.get("budgets", []), day.year, day.month)
+
+    async def check_budget_alerts(self, levels: tuple[int, ...]) -> list[tuple[dict, int]]:
+        """Soglie superate per la prima volta in questo mese (lo stato viene salvato)."""
+        if not self.data.get("budgets"):
+            return []
+        today = self.today()
+        state = self.data.setdefault("budget_state", {})
+        before = copy.deepcopy(state)
+        due = logic.budget_alerts_due(self.budget_status(today), state, today.isoformat()[:7], levels)
+        if state != before:
+            await self._store.async_save(self.data)
+        return due
 
     # ---------------------------------------------------------------- interessi
     async def set_interest(self, account: str, raw: dict) -> dict:
@@ -320,6 +371,8 @@ class FinanceTrackerManager:
             settings = self.data["settings"]
             self.data = {key: copy.deepcopy(payload.get(key, DEFAULT_DATA[key])) for key in DEFAULT_DATA}
             self.data["settings"] = settings  # le preferenze dell'utente non arrivano dal file
+            self.data["budgets"] = logic.clean_budgets(self.data.get("budgets", []))
+            self.data["budget_state"] = {}
         else:
             existing = {a["name"] for a in self.data["accounts"]}
             for acc in payload.get("accounts", []):
@@ -329,6 +382,10 @@ class FinanceTrackerManager:
                 for value in payload.get(key, []):
                     if value not in self.data[key]:
                         self.data[key].append(value)
+            have = {b["category"] for b in self.data.get("budgets", [])}
+            for item in logic.clean_budgets(payload.get("budgets", [])):
+                if item["category"] not in have:
+                    self.data["budgets"].append(item)
             for key in ("movements", "recurring"):
                 for item in payload.get(key, []):
                     new = dict(item)
@@ -343,6 +400,7 @@ class FinanceTrackerManager:
     def export_data(self) -> dict:
         out = {"format": "financetracker", "version": 1, **copy.deepcopy(self.data)}
         out.pop("settings", None)
+        out.pop("budget_state", None)  # stato interno delle notifiche
         return out
 
 

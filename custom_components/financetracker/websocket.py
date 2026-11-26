@@ -121,7 +121,12 @@ async def _interest(m: FinanceTrackerManager, msg: dict, user: str):
 
 async def _prefs(m: FinanceTrackerManager, msg: dict, user: str):
     return await m.save_prefs(msg.get("notify_services"), msg.get("sensors"), msg.get("theme"),
-                              msg["currency"] if "currency" in msg else False)
+                              msg["currency"] if "currency" in msg else False,
+                              msg.get("budget_alerts"))
+
+
+async def _budgets(m: FinanceTrackerManager, msg: dict, user: str):
+    return await m.save_budgets(msg["budgets"])
 
 
 async def _targets(m: FinanceTrackerManager, msg: dict, user: str):
@@ -162,7 +167,9 @@ def async_register(hass: HomeAssistant) -> None:
             vol.Optional("sensors"): bool,
             vol.Optional("theme"): vol.In(["auto", "light", "dark"]),
             vol.Optional("currency"): vol.Any(None, str),
+            vol.Optional("budget_alerts"): bool,
         }, _prefs),
+        ("financetracker/budgets/save", {vol.Required("budgets"): [ANY_DICT]}, _budgets),
         ("financetracker/notify_targets", {}, _targets),
         ("financetracker/account/interest", {
             vol.Required("account"): str,

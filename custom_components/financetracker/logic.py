@@ -162,6 +162,70 @@ def movement_from_recurring(item: dict, on: date) -> dict:
     }
 
 
+# ------------------------------------------------------------------- budget
+def clean_budgets(budgets: Iterable[dict]) -> list[dict]:
+    """Budget mensili per categoria: una voce per categoria, importo > 0, in ordine di inserimento."""
+    out: dict[str, dict] = {}
+    for b in budgets or []:
+        cat = str(b.get("category") or "").strip()
+        try:
+            amount = round(abs(float(str(b.get("amount") or 0).replace(",", "."))), 2)
+        except ValueError:
+            continue
+        if cat and amount > 0:
+            out[cat] = {"category": cat, "amount": amount}
+    return list(out.values())
+
+
+def budget_status(movements: Iterable[dict], budgets: Iterable[dict], year: int, month: int) -> list[dict]:
+    """Speso, residuo e percentuale di ogni budget nel mese indicato."""
+    spent = expenses_by_category(movements, *month_bounds(year, month))
+    out = []
+    for b in budgets or []:
+        amount = float(b["amount"])
+        used = spent.get(b["category"], 0.0)
+        out.append({
+            "category": b["category"], "amount": round(amount, 2), "spent": round(used, 2),
+            "remaining": round(amount - used, 2),
+            "pct": round(used / amount * 100, 1) if amount else 0.0,
+        })
+    return out
+
+
+def budget_totals(status: Iterable[dict]) -> dict[str, float]:
+    items = list(status)
+    amount = sum(s["amount"] for s in items)
+    spent = sum(s["spent"] for s in items)
+    return {"amount": round(amount, 2), "spent": round(spent, 2), "remaining": round(amount - spent, 2),
+            "pct": round(spent / amount * 100, 1) if amount else 0.0}
+
+
+def budget_level(pct: float, levels: Iterable[int] = (80, 100)) -> int:
+    """Soglia più alta raggiunta (0 se nessuna)."""
+    return max((lv for lv in levels if pct >= lv), default=0)
+
+
+def budget_alerts_due(status: Iterable[dict], state: dict, month_key: str,
+                      levels: Iterable[int] = (80, 100)) -> list[tuple[dict, int]]:
+    """Budget che hanno superato una soglia nuova nel mese; aggiorna `state` sul posto.
+
+    `state` = {"month": "2026-11", "levels": {"Ristorante": 80}}: ogni soglia viene
+    segnalata una sola volta al mese, anche se la spesa scende e poi risale.
+    """
+    levels = tuple(levels)
+    if state.get("month") != month_key:
+        state.clear()
+        state.update({"month": month_key, "levels": {}})
+    done = state.setdefault("levels", {})
+    out = []
+    for s in status:
+        lv = budget_level(s["pct"], levels)
+        if lv > int(done.get(s["category"], 0)):
+            done[s["category"]] = lv
+            out.append((s, lv))
+    return out
+
+
 # ---------------------------------------------------------------- interessi
 def clean_tiers(tiers: Iterable[dict]) -> list[dict]:
     """Scaglioni ordinati: [{"up_to": 3000, "rate": 2.5}, {"up_to": None, "rate": 1.0}]."""

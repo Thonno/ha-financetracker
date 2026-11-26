@@ -47,6 +47,9 @@
       },
       "recurring_due": {
         "name": "Spese fisse da registrare"
+      },
+      "budget_remaining": {
+        "name": "Budget residuo del mese"
       }
     }
   },
